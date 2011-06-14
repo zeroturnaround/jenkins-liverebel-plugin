@@ -4,8 +4,8 @@
 		         help="/plugin/liverebel-deploy-plugin/help-globalConfig.html">
 			<f:textbox name="authToken" value="${descriptor.getAuthToken()}" />
 		</f:entry>
-		<f:entry title="LiveRebel running address" description="Host and Port of running LiveRebel">
-			<f:textbox name="lrRunningAddress" value="${descriptor.getLRRunningAddress()}" />
+		<f:entry title="LiveRebel Url" description="Url of running LiveRebel">
+			<f:textbox name="lrUrl" value="${descriptor.getLrUrl()}" />
 		</f:entry>
 	</f:section>
 </j:jelly>

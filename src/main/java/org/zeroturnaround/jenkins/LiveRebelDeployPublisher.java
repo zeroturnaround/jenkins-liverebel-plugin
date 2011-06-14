@@ -5,10 +5,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Builder;
-import hudson.tasks.Notifier;
+import hudson.tasks.*;
 import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -25,7 +22,6 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
 	private final String artifact;
 	private final String appName;
-	private String authToken;
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
@@ -47,7 +43,10 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
 		try {
-			Process proc=Runtime.getRuntime().exec("/home/jt/zt/Test/jenkins-plugin/liverebel-plugin/upload-activate-version.sh "+artifact+" "+ appName);
+			
+
+
+			Process proc=Runtime.getRuntime().exec("/home/jt/zt/Test/jenkins-plugin/liverebel-plugin/upload-activate-version.sh /home/jt/zt/Test/jenkins-plugin/liverebel-deploy-plugin/work/jobs/lr-demo-app/workspace/"+artifact+" "+ appName);
 			BufferedReader read=new BufferedReader(new InputStreamReader(proc.getInputStream()));
 			proc.waitFor();
 			while(read.ready()) {
@@ -76,24 +75,11 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 	}
 
 	@Extension // This indicates to Jenkins that this is an implementation of an extension point.
-	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-		/**
-		 * To persist global configuration information,
-		 * simply store it in a field and call save().
-		 *
-		 * <p>
-		 * If you don't want fields to be persisted, use <tt>transient</tt>.
-		 */
-		private String authToken;
+	public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-		/**
-		 * Performs on-the-fly validation of the form field 'name'.
-		 *
-		 * @param value
-		 *      This parameter receives the value that the user has typed.
-		 * @return
-		 *      Indicates the outcome of the validation. This is sent to the browser.
-		 */
+		private String authToken;
+		private String lrRunningAddress;
+
 		public FormValidation doCheckAppName(@QueryParameter String value) throws IOException, ServletException {
 			if (value.length() == 0)
 				return FormValidation.error("Please set application name");
@@ -123,14 +109,16 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 			// To persist global configuration information,
 			// set that to properties and call save().
 			authToken = formData.getString("authToken");
-			// ^Can also use req.bindJSON(this, formData);
-			//  (easier when there are many fields; need set* methods for this, like setUseFrench)
+			lrRunningAddress = formData.getString("lrRunningAddress");
 			save();
 			return super.configure(req,formData);
 		}
 
 		public String getAuthToken() {
 			return authToken;
+		}
+		public String getLRRunningAddress(){
+			return lrRunningAddress;
 		}
 	}
 }

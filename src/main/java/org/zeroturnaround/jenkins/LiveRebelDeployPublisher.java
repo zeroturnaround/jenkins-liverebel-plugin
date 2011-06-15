@@ -1,7 +1,26 @@
 package org.zeroturnaround.jenkins;
 
+/*****************************************************************
+Copyright 2011 ZeroTurnaround OÜ
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*****************************************************************/
+
 import com.zeroturnaround.liverebel.api.*;
 import com.zeroturnaround.liverebel.api.Error;
+import com.zeroturnaround.liverebel.api.diff.DiffResult;
+import com.zeroturnaround.liverebel.api.diff.Event;
+import com.zeroturnaround.liverebel.api.diff.Item;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -13,6 +32,7 @@ import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -21,6 +41,8 @@ import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Iterator;
+
 
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
@@ -47,8 +69,40 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 				setVerbose(true).
 				authenticate(getDescriptor().getAuthToken()).
 				newCommandCenter();
-				UploadInfo upload = commandCenter.upload(new File(build.getWorkspace().child(artifact).toURI()));
-				listener.getLogger().println("SUCCESS: " + upload.getApplicationId() + " " + upload.getVersionId() + " was uploaded.");
+			UploadInfo upload = commandCenter.upload(new File(build.getWorkspace().child(artifact).toURI()));
+			listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());
+
+
+			ApplicationInfo applicationInfo = commandCenter.getApplication(upload.getApplicationId());
+			String activeVersion = StringUtils.join(applicationInfo.getActiveVersions(), ", ");
+			listener.getLogger().printf("Currently active version: %s\n", activeVersion);
+			if (activeVersion.equals(upload.getVersionId())){
+				listener.getLogger().println("You are trying to upload the same version. Not doing anything.");
+				return false;
+			}
+
+
+			DiffResult diffResult = commandCenter.compare(upload.getApplicationId(), activeVersion, upload.getVersionId(), false);
+			listener.getLogger().println("Compatibility: " + diffResult.getCompatibility());
+			for (Iterator it = diffResult.getItems().iterator(); it.hasNext();) {
+				Item item = (Item) it.next();
+				listener.getLogger().printf("%s\t%s\t%s\n", item.getDirection(), item.getPath(), item.getElement());
+				for (Event event : item.getEvents())
+					listener.getLogger().printf(" - %s\t%s\t%s\n", event.getLevel(), event.getDescription(), event.getEffect());
+				if (it.hasNext())
+					listener.getLogger().println();
+			}
+
+			if (diffResult.getCompatibility().startsWith("compatible")){
+				listener.getLogger().println("Activating version "+ upload.getVersionId());
+				commandCenter.update(upload.getApplicationId(), upload.getVersionId()).execute();
+				listener.getLogger().printf("Version %s activated.\n", upload.getVersionId());
+			}
+			else {
+				listener.getLogger().println("Not doing anything at the moment");
+				return false;
+			}
+
 		}
 		catch (IllegalArgumentException e) {
 			listener.getLogger().println("ERROR! " + e.getMessage());

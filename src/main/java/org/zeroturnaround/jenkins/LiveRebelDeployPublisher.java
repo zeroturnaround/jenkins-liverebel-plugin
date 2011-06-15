@@ -106,7 +106,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 	@Extension // This indicates to Jenkins that this is an implementation of an extension point.
 	public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-		private String authToken = "9248c21e-27fc-4d9b-9df3-d7b08c51aee2";
+		private String authToken;
 		private String lrUrl = "https://localhost:9001";
 
 		public FormValidation doCheckArtifact(@QueryParameter String value) throws IOException, ServletException {

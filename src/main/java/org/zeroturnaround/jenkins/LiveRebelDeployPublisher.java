@@ -22,10 +22,13 @@ import com.zeroturnaround.liverebel.api.diff.DiffResult;
 import com.zeroturnaround.liverebel.api.diff.Event;
 import com.zeroturnaround.liverebel.api.diff.Item;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.plugins.deploy.ContainerAdapter;
+import hudson.plugins.deploy.ContainerAdapterDescriptor;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
@@ -41,66 +44,51 @@ import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Iterator;
+import java.util.*;
 
 
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
-	private final String artifact;
+	public final String war;
+	public final ContainerAdapter adapter;
+	private String applicationId;
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public LiveRebelDeployPublisher(String artifact) {
-		this.artifact = artifact;
-	}
-
-	/**
-	 * We'll use this from the <tt>config.jelly</tt>.
-	 */
-	public String getArtifact() {
-		return artifact;
+	public LiveRebelDeployPublisher(String war, ContainerAdapter adapter) {
+		this.war = war;
+		this.adapter = adapter;
 	}
 
 	@Override
-	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
 		try {
 			CommandCenter commandCenter = new CommandCenterFactory().
 				setUrl(getDescriptor().getLrUrl()).
 				setVerbose(true).
 				authenticate(getDescriptor().getAuthToken()).
 				newCommandCenter();
-			UploadInfo upload = commandCenter.upload(new File(build.getWorkspace().child(artifact).toURI()));
-			listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());
+
+			for (FilePath warFile : build.getWorkspace().list(war)){
+				UploadInfo upload = uploadArtifact(commandCenter, new File(warFile.toURI()), listener);
+				applicationId = upload.getApplicationId();
+				String activeVersion = getApplicationCurrentVersion(commandCenter, listener);
 
 
-			ApplicationInfo applicationInfo = commandCenter.getApplication(upload.getApplicationId());
-			String activeVersion = StringUtils.join(applicationInfo.getActiveVersions(), ", ");
-			listener.getLogger().printf("Currently active version: %s\n", activeVersion);
-			if (activeVersion.equals(upload.getVersionId())){
-				listener.getLogger().println("You are trying to upload the same version. Not doing anything.");
-				return false;
-			}
+				if (activeVersion.equals(upload.getVersionId())){
+					listener.getLogger().println("You are trying to upload the same version. Not doing anything.");
+					return true;
+				}
 
+				DiffResult diffResult = compareVersions(activeVersion, upload.getVersionId(), commandCenter, listener);
 
-			DiffResult diffResult = commandCenter.compare(upload.getApplicationId(), activeVersion, upload.getVersionId(), false);
-			listener.getLogger().println("Compatibility: " + diffResult.getCompatibility());
-			for (Iterator it = diffResult.getItems().iterator(); it.hasNext();) {
-				Item item = (Item) it.next();
-				listener.getLogger().printf("%s\t%s\t%s\n", item.getDirection(), item.getPath(), item.getElement());
-				for (Event event : item.getEvents())
-					listener.getLogger().printf(" - %s\t%s\t%s\n", event.getLevel(), event.getDescription(), event.getEffect());
-				if (it.hasNext())
-					listener.getLogger().println();
-			}
-
-			if (diffResult.getCompatibility().startsWith("compatible")){
-				listener.getLogger().println("Activating version "+ upload.getVersionId());
-				commandCenter.update(upload.getApplicationId(), upload.getVersionId()).execute();
-				listener.getLogger().printf("Version %s activated.\n", upload.getVersionId());
-			}
-			else {
-				listener.getLogger().println("Not doing anything at the moment");
-				return false;
+				if (diffResult.getCompatibility().startsWith("compatible")){
+					updateApplication(upload.getVersionId(), commandCenter, listener);
+				}
+				else {
+					listener.getLogger().println("Deploying new artifact without LiveRebel...");
+					return adapter.redeploy(warFile, build, launcher, listener);
+				}
 			}
 
 		}
@@ -147,6 +135,39 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 		return true;
 	}
 
+	private void updateApplication(String newVersion, CommandCenter commandCenter, BuildListener listener) {
+		listener.getLogger().println("Activating version "+ newVersion);
+		commandCenter.update(applicationId, newVersion).execute();
+		listener.getLogger().printf("Version %s activated.\n", newVersion);
+	}
+
+	private DiffResult compareVersions(String activeVersion, String newVersion, CommandCenter commandCenter, BuildListener listener) {
+		DiffResult diffResult = commandCenter.compare(applicationId, activeVersion, newVersion, false);
+		listener.getLogger().println("Compatibility: " + diffResult.getCompatibility());
+		for (Iterator it = diffResult.getItems().iterator(); it.hasNext();) {
+			Item item = (Item) it.next();
+			listener.getLogger().printf("%s\t%s\t%s\n", item.getDirection(), item.getPath(), item.getElement());
+			for (Event event : item.getEvents())
+				listener.getLogger().printf(" - %s\t%s\t%s\n", event.getLevel(), event.getDescription(), event.getEffect());
+			if (it.hasNext())
+				listener.getLogger().println();
+		}
+		return diffResult;
+	}
+
+	private String getApplicationCurrentVersion(CommandCenter commandCenter, BuildListener listener) {
+		ApplicationInfo applicationInfo = commandCenter.getApplication(applicationId);
+		String activeVersion = StringUtils.join(applicationInfo.getActiveVersions(), ", ");
+		listener.getLogger().printf("Currently active version: %s\n", activeVersion);
+		return activeVersion;
+	}
+
+	private UploadInfo uploadArtifact(CommandCenter commandCenter, File artifact, BuildListener listener) throws IOException, InterruptedException {
+		UploadInfo upload = commandCenter.upload(artifact);
+		listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());
+		return upload;
+	}
+
 	// Overridden for better type safety.
 	@Override
 	public DescriptorImpl getDescriptor() {
@@ -178,7 +199,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 		 * This human readable name is used in the configuration screen.
 		 */
 		public String getDisplayName() {
-			return "Deploy artifacts using LiveRebel.";
+			return "Deploy artifacts with LiveRebel";
 		}
 
 		@Override
@@ -196,6 +217,16 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 		}
 		public String getLrUrl(){
 			return lrUrl;
+		}
+
+		public List<ContainerAdapterDescriptor> getContainerAdapters() {
+			List<ContainerAdapterDescriptor> r = new ArrayList<ContainerAdapterDescriptor>(ContainerAdapter.all());
+			Collections.sort(r, new Comparator<ContainerAdapterDescriptor>() {
+				public int compare(ContainerAdapterDescriptor o1, ContainerAdapterDescriptor o2) {
+					return o1.getDisplayName().compareTo(o2.getDisplayName());
+				}
+			});
+			return r;
 		}
 	}
 }

@@ -49,13 +49,15 @@ import java.util.List;
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
 	public final String artifacts;
+	public final boolean useCargoIfIncompatible;
 	public final ContainerAdapter adapter;
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public LiveRebelDeployPublisher(String artifacts, ContainerAdapter adapter) {
+	public LiveRebelDeployPublisher(String artifacts, ContainerAdapter adapter, boolean useCargoIfIncompatible) {
 		this.artifacts = artifacts;
 		this.adapter = adapter;
+		this.useCargoIfIncompatible = useCargoIfIncompatible;
 	}
 
 	@Override
@@ -69,7 +71,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 				authenticate(getDescriptor().getAuthToken()).
 				newCommandCenter();
 
-			new LiveRebelProxy(commandCenter, build.getWorkspace().list(artifacts), listener, deployPluginProxy).performRelease();
+			new LiveRebelProxy(commandCenter, build.getWorkspace().list(artifacts), useCargoIfIncompatible, listener, deployPluginProxy).performRelease();
 		}
 		catch (IllegalArgumentException e) {
 			listener.getLogger().println("ERROR! " + e.getMessage());

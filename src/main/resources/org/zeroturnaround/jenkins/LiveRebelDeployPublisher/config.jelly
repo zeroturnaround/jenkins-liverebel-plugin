@@ -7,22 +7,29 @@
 		<f:textbox />
 	</f:entry>
 
-	<f:dropdownList name="adapter" title="${%Container}">
-		<j:forEach var="d" items="${descriptor.containerAdapters}" varStatus="loop">
-			<f:dropdownListBlock value="${d.clazz.name}" title="${d.displayName}" selected="${instance.adapter.descriptor==d}">
-				<f:nested>
-					<table width="100%">
-						<tr><td>
-							<input type="hidden" name="stapler-class" value="${d.clazz.name}" />
-						</td></tr>
-						<j:scope>
-							<j:set var="descriptor" value="${d}"/>
-							<j:set var="instance" value="${h.ifThenElse(instance.adapter.descriptor==descriptor, instance.adapter, null)}"/>
-							<st:include class="${descriptor.clazz}" page="config.jelly"/>
-						</j:scope>
-					</table>
-				</f:nested>
-			</f:dropdownListBlock>
-		</j:forEach>
-	</f:dropdownList>
+	<f:nested>
+		<table>
+			<f:optionalBlock name="useCargoIfIncompatible" title="Fallback to cargo deploy if new version is incompatible.">
+				<f:dropdownList name="adapter" title="${%Container}">
+					<j:forEach var="d" items="${descriptor.containerAdapters}" varStatus="loop">
+						<f:dropdownListBlock value="${d.clazz.name}" title="${d.displayName}" selected="${instance.adapter.descriptor==d}">
+							<f:nested>
+								<table width="100%">
+									<tr><td>
+										<input type="hidden" name="stapler-class" value="${d.clazz.name}" />
+									</td></tr>
+									<j:scope>
+										<j:set var="descriptor" value="${d}"/>
+										<j:set var="instance" value="${h.ifThenElse(instance.adapter.descriptor==descriptor, instance.adapter, null)}"/>
+										<st:include class="${descriptor.clazz}" page="config.jelly"/>
+									</j:scope>
+								</table>
+							</f:nested>
+						</f:dropdownListBlock>
+					</j:forEach>
+				</f:dropdownList>
+			</f:optionalBlock>
+		</table>
+	</f:nested>
+
 </j:jelly>

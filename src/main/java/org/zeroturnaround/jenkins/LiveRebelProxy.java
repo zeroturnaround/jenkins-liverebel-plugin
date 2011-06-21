@@ -40,12 +40,14 @@ public class LiveRebelProxy {
 
 	private final CommandCenter commandCenter;
 	private final FilePath[] wars;
+	private final boolean useCargoIfIncompatible;
 	private final BuildListener listener;
 	private final DeployPluginProxy deployPluginProxy;
 
-	public LiveRebelProxy(CommandCenter center, FilePath[] warFiles, BuildListener listener, DeployPluginProxy deployPluginProxy) {
+	public LiveRebelProxy(CommandCenter center, FilePath[] warFiles, boolean useCargoIfIncompatible, BuildListener listener, DeployPluginProxy deployPluginProxy) {
 		commandCenter = center;
 		wars = warFiles;
+		this.useCargoIfIncompatible = useCargoIfIncompatible;
 		this.listener = listener;
 		this.deployPluginProxy = deployPluginProxy;
 	}
@@ -72,7 +74,7 @@ public class LiveRebelProxy {
 			listener.getLogger().println("Current version is already running on server. No need to update.");
 			return true;
 		}
-		else if (activeVersion.isEmpty()){
+		else if (activeVersion.isEmpty() && useCargoIfIncompatible){
 			return deployPluginProxy.cargoDeploy(warfile);
 		}
 		else {
@@ -82,7 +84,7 @@ public class LiveRebelProxy {
 				commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId()).execute();
 				listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
 			}
-			else {
+			else if (useCargoIfIncompatible) {
 				return deployPluginProxy.cargoDeploy(warfile);
 			}
 			return false;

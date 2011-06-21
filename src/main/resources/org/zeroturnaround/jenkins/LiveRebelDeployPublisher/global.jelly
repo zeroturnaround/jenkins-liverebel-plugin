@@ -1,11 +1,12 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 	<f:section title="LiveRebel Deploy Plugin">
-		<f:entry title="Authentication Token" description="Authentikation token of your LiveRebel."
+		<f:entry title="Authentication Token" description="Authentication token of your LiveRebel."
 		         help="/plugin/liverebel-deploy-plugin/help-globalConfig.html">
 			<f:textbox name="authToken" value="${descriptor.getAuthToken()}" />
 		</f:entry>
 		<f:entry title="LiveRebel Url" description="Url of running LiveRebel">
 			<f:textbox name="lrUrl" value="${descriptor.getLrUrl()}" />
 		</f:entry>
+		<f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="authToken,lrUrl" />
 	</f:section>
 </j:jelly>

@@ -18,9 +18,6 @@ limitations under the License.
 
 import com.zeroturnaround.liverebel.api.*;
 import com.zeroturnaround.liverebel.api.Error;
-import com.zeroturnaround.liverebel.api.diff.DiffResult;
-import com.zeroturnaround.liverebel.api.diff.Event;
-import com.zeroturnaround.liverebel.api.diff.Item;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -35,62 +32,44 @@ import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
-	public final String war;
+	public final String artifacts;
 	public final ContainerAdapter adapter;
-	private String applicationId;
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public LiveRebelDeployPublisher(String war, ContainerAdapter adapter) {
-		this.war = war;
+	public LiveRebelDeployPublisher(String artifacts, ContainerAdapter adapter) {
+		this.artifacts = artifacts;
 		this.adapter = adapter;
 	}
 
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
 		try {
+			DeployPluginProxy deployPluginProxy = new DeployPluginProxy(adapter, build, launcher, listener);
+
 			CommandCenter commandCenter = new CommandCenterFactory().
 				setUrl(getDescriptor().getLrUrl()).
 				setVerbose(true).
 				authenticate(getDescriptor().getAuthToken()).
 				newCommandCenter();
 
-			for (FilePath warFile : build.getWorkspace().list(war)){
-				UploadInfo upload = uploadArtifact(commandCenter, new File(warFile.toURI()), listener);
-				applicationId = upload.getApplicationId();
-				String activeVersion = getApplicationCurrentVersion(commandCenter, listener);
-
-
-				if (activeVersion.equals(upload.getVersionId())){
-					listener.getLogger().println("You are trying to upload the same version. Not doing anything.");
-					return true;
-				}
-
-				DiffResult diffResult = compareVersions(activeVersion, upload.getVersionId(), commandCenter, listener);
-
-				if (diffResult.getCompatibility().startsWith("compatible")){
-					updateApplication(upload.getVersionId(), commandCenter, listener);
-				}
-				else {
-					listener.getLogger().println("Deploying new artifact without LiveRebel...");
-					return adapter.redeploy(warFile, build, launcher, listener);
-				}
-			}
-
+			new LiveRebelProxy(commandCenter, build.getWorkspace().list(artifacts), listener, deployPluginProxy).performRelease();
 		}
 		catch (IllegalArgumentException e) {
 			listener.getLogger().println("ERROR! " + e.getMessage());
@@ -135,39 +114,6 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 		return true;
 	}
 
-	private void updateApplication(String newVersion, CommandCenter commandCenter, BuildListener listener) {
-		listener.getLogger().println("Activating version "+ newVersion);
-		commandCenter.update(applicationId, newVersion).execute();
-		listener.getLogger().printf("Version %s activated.\n", newVersion);
-	}
-
-	private DiffResult compareVersions(String activeVersion, String newVersion, CommandCenter commandCenter, BuildListener listener) {
-		DiffResult diffResult = commandCenter.compare(applicationId, activeVersion, newVersion, false);
-		listener.getLogger().println("Compatibility: " + diffResult.getCompatibility());
-		for (Iterator it = diffResult.getItems().iterator(); it.hasNext();) {
-			Item item = (Item) it.next();
-			listener.getLogger().printf("%s\t%s\t%s\n", item.getDirection(), item.getPath(), item.getElement());
-			for (Event event : item.getEvents())
-				listener.getLogger().printf(" - %s\t%s\t%s\n", event.getLevel(), event.getDescription(), event.getEffect());
-			if (it.hasNext())
-				listener.getLogger().println();
-		}
-		return diffResult;
-	}
-
-	private String getApplicationCurrentVersion(CommandCenter commandCenter, BuildListener listener) {
-		ApplicationInfo applicationInfo = commandCenter.getApplication(applicationId);
-		String activeVersion = StringUtils.join(applicationInfo.getActiveVersions(), ", ");
-		listener.getLogger().printf("Currently active version: %s\n", activeVersion);
-		return activeVersion;
-	}
-
-	private UploadInfo uploadArtifact(CommandCenter commandCenter, File artifact, BuildListener listener) throws IOException, InterruptedException {
-		UploadInfo upload = commandCenter.upload(artifact);
-		listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());
-		return upload;
-	}
-
 	// Overridden for better type safety.
 	@Override
 	public DescriptorImpl getDescriptor() {
@@ -184,10 +130,28 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 		private String authToken;
 		private String lrUrl = "https://localhost:9001";
 
-		public FormValidation doCheckArtifact(@QueryParameter String value) throws IOException, ServletException {
+		public FormValidation doCheckArtifacts(@AncestorInPath AbstractProject project, @QueryParameter String value) throws IOException, ServletException {
 			if (value.length() == 0)
-				return FormValidation.error("Please, set artifact");
-			return FormValidation.ok();
+				return FormValidation.error("Please, provide at least one artifact.");
+			else {
+				return FilePath.validateFileMask(project.getSomeWorkspace(), value);
+			}
+		}
+
+		public FormValidation doTestConnection(@QueryParameter("authToken") final String authToken, @QueryParameter("lrUrl") final String lrUrl) throws IOException, ServletException {
+			try {
+				new CommandCenterFactory().setUrl(lrUrl).setVerbose(true).authenticate(authToken).newCommandCenter();
+				return FormValidation.ok("Success");
+			}
+			catch (Forbidden e){
+				return FormValidation.error("Please, provide right authentication token!");
+			}
+			catch (ConnectException e){
+				return FormValidation.error("Could not connect to LiveRebel Url (%s). LiveRebel should be running.", e.getURL());
+			}
+			catch (Exception e) {
+				return FormValidation.error(e.getMessage());
+			}
 		}
 
 		public boolean isApplicable(Class<? extends AbstractProject> aClass) {

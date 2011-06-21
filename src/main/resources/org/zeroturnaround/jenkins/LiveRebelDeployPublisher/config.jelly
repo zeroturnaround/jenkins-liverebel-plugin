@@ -3,7 +3,7 @@
 		See global.jelly for a general discussion about jelly script.
 	-->
 
-	<f:entry title="Artifacts to upload" field="war">
+	<f:entry title="Artifacts to upload" field="artifacts">
 		<f:textbox />
 	</f:entry>
 

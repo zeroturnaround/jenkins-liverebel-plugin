@@ -74,8 +74,8 @@ public class LiveRebelProxy {
 			listener.getLogger().println("Current version is already running on server. No need to update.");
 			return true;
 		}
-		else if (activeVersion.isEmpty() && useCargoIfIncompatible){
-			return deployPluginProxy.cargoDeploy(warfile);
+		else if (activeVersion.isEmpty()){
+			return useCargoIfIncompatible && deployPluginProxy.cargoDeploy(warfile);
 		}
 		else {
 			DiffResult diffResult = getDifferences(lrXml, activeVersion);
@@ -84,8 +84,8 @@ public class LiveRebelProxy {
 				commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId()).execute();
 				listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
 			}
-			else if (useCargoIfIncompatible) {
-				return deployPluginProxy.cargoDeploy(warfile);
+			else {
+				return useCargoIfIncompatible && deployPluginProxy.cargoDeploy(warfile);
 			}
 			return false;
 		}

@@ -40,24 +40,27 @@ import org.kohsuke.stapler.StaplerRequest;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-
+@SuppressWarnings("UnusedDeclaration")
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
 	public final String artifacts;
-	public final boolean useCargoIfIncompatible;
 	public final ContainerAdapter adapter;
+
+	public boolean useCargo() {
+		return adapter != null;
+	}
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public LiveRebelDeployPublisher(String artifacts, ContainerAdapter adapter, boolean useCargoIfIncompatible) {
+	public LiveRebelDeployPublisher(String artifacts, ContainerAdapter adapter) {
 		this.artifacts = artifacts;
 		this.adapter = adapter;
-		this.useCargoIfIncompatible = useCargoIfIncompatible;
 	}
 
 	@Override
@@ -71,7 +74,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 				authenticate(getDescriptor().getAuthToken()).
 				newCommandCenter();
 
-			new LiveRebelProxy(commandCenter, build.getWorkspace().list(artifacts), useCargoIfIncompatible, listener, deployPluginProxy).performRelease();
+			new LiveRebelProxy(commandCenter, build.getWorkspace().list(artifacts), useCargo(), listener, deployPluginProxy).performRelease();
 		}
 		catch (IllegalArgumentException e) {
 			listener.getLogger().println("ERROR! " + e.getMessage());
@@ -129,20 +132,43 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 	@Extension // This indicates to Jenkins that this is an implementation of an extension point.
 	public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-		private String authToken;
-		private String lrUrl = "https://localhost:9001";
-
-		public FormValidation doCheckArtifacts(@AncestorInPath AbstractProject project, @QueryParameter String value) throws IOException, ServletException {
-			if (value.length() == 0)
-				return FormValidation.error("Please, provide at least one artifact.");
-			else {
-				return FilePath.validateFileMask(project.getSomeWorkspace(), value);
-			}
+		public DescriptorImpl(){
+			load();
 		}
 
+		private String authToken;
+		private String lrUrl;
+
+		public String getAuthToken() {
+			return authToken;
+		}
+		public String getLrUrl(){
+			return lrUrl;
+		}
+
+		@SuppressWarnings("UnusedDeclaration")
+		public FormValidation doCheckLrUrl(@QueryParameter("lrUrl") final String value) throws IOException, ServletException {
+			if (value != null && value.length() > 0) {
+				try {
+					new URL(value);
+				} catch (Exception e) {
+					return FormValidation.error("Should be a valid URL.");
+				}
+			}
+			return FormValidation.ok();
+		}
+
+		@SuppressWarnings("UnusedDeclaration")
+		public FormValidation doCheckAuthToken(@QueryParameter("authToken") final String value) throws IOException, ServletException {
+			if (value == null || value.length() != 36)
+				return FormValidation.error("Should be a valid authentication token.");
+			return FormValidation.ok();
+		}
+
+		@SuppressWarnings("UnusedDeclaration")
 		public FormValidation doTestConnection(@QueryParameter("authToken") final String authToken, @QueryParameter("lrUrl") final String lrUrl) throws IOException, ServletException {
 			try {
-				new CommandCenterFactory().setUrl(lrUrl).setVerbose(true).authenticate(authToken).newCommandCenter();
+				new CommandCenterFactory().setUrl(lrUrl).setVerbose(false).authenticate(authToken).newCommandCenter();
 				return FormValidation.ok("Success");
 			}
 			catch (Forbidden e){
@@ -178,13 +204,16 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 			return super.configure(req,formData);
 		}
 
-		public String getAuthToken() {
-			return authToken;
-		}
-		public String getLrUrl(){
-			return lrUrl;
+		@SuppressWarnings("UnusedDeclaration")
+		public FormValidation doCheckArtifacts(@AncestorInPath AbstractProject project, @QueryParameter String value) throws IOException, ServletException {
+			if (value == null || value.length() == 0)
+				return FormValidation.error("Please, provide at least one artifact.");
+			else {
+				return FilePath.validateFileMask(project.getSomeWorkspace(), value);
+			}
 		}
 
+		@SuppressWarnings("UnusedDeclaration")
 		public List<ContainerAdapterDescriptor> getContainerAdapters() {
 			List<ContainerAdapterDescriptor> r = new ArrayList<ContainerAdapterDescriptor>(ContainerAdapter.all());
 			Collections.sort(r, new Comparator<ContainerAdapterDescriptor>() {

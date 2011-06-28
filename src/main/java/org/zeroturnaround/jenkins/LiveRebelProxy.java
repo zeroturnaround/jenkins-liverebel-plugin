@@ -31,7 +31,6 @@ import hudson.model.BuildListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Juri Timoshin
@@ -40,14 +39,14 @@ public class LiveRebelProxy {
 
 	private final CommandCenter commandCenter;
 	private final FilePath[] wars;
-	private final boolean useCargoIfIncompatible;
+	private final boolean useCargo;
 	private final BuildListener listener;
 	private final DeployPluginProxy deployPluginProxy;
 
 	public LiveRebelProxy(CommandCenter center, FilePath[] warFiles, boolean useCargoIfIncompatible, BuildListener listener, DeployPluginProxy deployPluginProxy) {
 		commandCenter = center;
 		wars = warFiles;
-		this.useCargoIfIncompatible = useCargoIfIncompatible;
+		this.useCargo = useCargoIfIncompatible;
 		this.listener = listener;
 		this.deployPluginProxy = deployPluginProxy;
 	}
@@ -61,34 +60,51 @@ public class LiveRebelProxy {
 		}
 	}
 
+	private boolean isFirstRelease( ApplicationInfo applicationInfo ){
+		return applicationInfo == null;
+	}
+
 	private void update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warfile) throws IOException, InterruptedException {
 		listener.getLogger().println("Starting updating application on servers:");
-		for (Map.Entry<String, String> versionWithServer : applicationInfo.getActiveVersionPerServer().entrySet()){
-			updateOnServer(lrXml, versionWithServer.getKey(), versionWithServer.getValue(), warfile);
-		}
+		if (isFirstRelease(applicationInfo))
+			for (String server : commandCenter.getServers().keySet())
+				updateOnServer(lrXml, server, "", warfile);
+		else
+			for (Map.Entry<String, String> versionWithServer : applicationInfo.getActiveVersionPerServer().entrySet())
+				updateOnServer(lrXml, versionWithServer.getKey(), versionWithServer.getValue(), warfile);
 	}
 
 	private boolean updateOnServer(LiveRebelXml lrXml, String server, String activeVersion, FilePath warfile) throws IOException, InterruptedException {
-		listener.getLogger().printf("Server: %s, active version on server: %s.\n", server, activeVersion);
-		if (activeVersion.equals(lrXml.getVersionId())){
-			listener.getLogger().println("Current version is already running on server. No need to update.");
-			return true;
-		}
-		else if (activeVersion.isEmpty()){
-			return useCargoIfIncompatible && deployPluginProxy.cargoDeploy(warfile);
+		if (activeVersion.isEmpty()){
+			listener.getLogger().printf("There is no such application on server %s.\n", server);
+			return cargoDeploy(warfile);
 		}
 		else {
-			DiffResult diffResult = getDifferences(lrXml, activeVersion);
-			if (diffResult.getCompatibility().startsWith("compatible")){
-				listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server );
-				commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId()).execute();
-				listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
+			listener.getLogger().printf("Server: %s, active version on server: %s.\n", server, activeVersion);
+		
+			if (activeVersion.equals(lrXml.getVersionId())){
+				listener.getLogger().println("Current version is already running on server. No need to update.");
+				return true;
 			}
 			else {
-				return useCargoIfIncompatible && deployPluginProxy.cargoDeploy(warfile);
+				DiffResult diffResult = getDifferences(lrXml, activeVersion);
+				if (diffResult.getCompatibility().startsWith("compatible")){
+					listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server );
+					commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId()).execute();
+					listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
+				}
+				else {
+					return cargoDeploy(warfile);
+				}
+				return false;
 			}
-			return false;
 		}
+	}
+
+	private boolean cargoDeploy(FilePath warfile) throws IOException, InterruptedException {
+		if (useCargo) return deployPluginProxy.cargoDeploy(warfile);
+		listener.getLogger().println("Fallback to cargo deploy is disabled. Doing nothing.");
+		return false;
 	}
 
 	private DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
@@ -104,16 +120,16 @@ public class LiveRebelProxy {
 	}
 
 	private void uploadIfNeeded(ApplicationInfo applicationInfo, String currentVersion, FilePath warFile) throws IOException, InterruptedException {
-		Set<String> uploadedVersions = applicationInfo.getVersions();
-		if ( uploadedVersions.contains(currentVersion)){
+		if (applicationInfo == null) return;
+		if ( applicationInfo.getVersions().contains(currentVersion)){
 			listener.getLogger().println("Current version of application is already uploaded. Skipping upload.");
 		}
 		else{
-			uploadArtifact(commandCenter, new File(warFile.toURI()), listener);
+			uploadArtifact(new File(warFile.toURI()));
 		}
 	}
 
-	private boolean uploadArtifact(CommandCenter commandCenter, File artifact, BuildListener listener) throws IOException, InterruptedException {
+	private boolean uploadArtifact(File artifact) throws IOException, InterruptedException {
 		try {
 			UploadInfo upload = commandCenter.upload(artifact);
 			listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());

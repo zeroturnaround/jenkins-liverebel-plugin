@@ -75,7 +75,7 @@ public class LiveRebelProxy {
 	}
 
 	private boolean updateOnServer(LiveRebelXml lrXml, String server, String activeVersion, FilePath warfile) throws IOException, InterruptedException {
-		if (activeVersion.isEmpty()){
+		if (activeVersion.length() == 0){
 			listener.getLogger().printf("There is no such application on server %s.\n", server);
 			return cargoDeploy(warfile);
 		}
@@ -121,7 +121,7 @@ public class LiveRebelProxy {
 
 	private void uploadIfNeeded(ApplicationInfo applicationInfo, String currentVersion, FilePath warFile) throws IOException, InterruptedException {
 		if (applicationInfo == null) return;
-		if ( applicationInfo.getVersions().contains(currentVersion)){
+		if (applicationInfo.getVersions().contains(currentVersion)){
 			listener.getLogger().println("Current version of application is already uploaded. Skipping upload.");
 		}
 		else{

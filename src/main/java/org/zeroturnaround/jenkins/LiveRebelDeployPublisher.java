@@ -24,6 +24,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Result;
 import hudson.plugins.deploy.ContainerAdapter;
 import hudson.plugins.deploy.ContainerAdapterDescriptor;
 import hudson.tasks.BuildStepDescriptor;
@@ -66,6 +67,8 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
 		try {
+			if (!build.getResult().equals(Result.SUCCESS)) return true;
+
 			DeployPluginProxy deployPluginProxy = new DeployPluginProxy(adapter, build, launcher, listener);
 
 			CommandCenter commandCenter = new CommandCenterFactory().

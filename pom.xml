@@ -41,6 +41,28 @@
 				<version>1.0-beta-7</version>
 			</extension>
 		</extensions>
+		<plugins>
+			<plugin>
+				<!-- make sure our code doesn`t have 1.6 dependencies except where we know it -->
+				<groupId>org.jvnet</groupId>
+				<artifactId>animal-sniffer</artifactId>
+				<version>1.2</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<signature>
+								<groupId>org.jvnet.animal-sniffer</groupId>
+								<artifactId>java1.5</artifactId>
+								<version>1.0</version>
+							</signature>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 
 	<scm>
@@ -64,6 +86,14 @@
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>deploy</artifactId>
 			<version>1.7</version>
+		</dependency>
+		<dependency>
+			<!-- for JRE requirement check annotation -->
+			<groupId>org.jvnet</groupId>
+			<artifactId>animal-sniffer-annotation</artifactId>
+			<version>1.0</version>
+			<optional>true</optional>
+			<scope>provided</scope><!-- not needed in runtime -->
 		</dependency>
 	</dependencies>
 

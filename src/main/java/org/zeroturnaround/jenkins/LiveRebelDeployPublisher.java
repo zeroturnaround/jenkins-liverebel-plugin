@@ -16,8 +16,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 *****************************************************************/
 
-import com.zeroturnaround.liverebel.api.*;
-import com.zeroturnaround.liverebel.api.Error;
+import com.zeroturnaround.liverebel.api.CommandCenterFactory;
+import com.zeroturnaround.liverebel.api.ConnectException;
+import com.zeroturnaround.liverebel.api.Forbidden;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -66,60 +67,16 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-		try {
-			if (!build.getResult().equals(Result.SUCCESS)) return true;
+		if (!build.getResult().equals(Result.SUCCESS)) return false;
 
-			DeployPluginProxy deployPluginProxy = new DeployPluginProxy(adapter, build, launcher, listener);
+		DeployPluginProxy deployPluginProxy = new DeployPluginProxy(adapter, build, launcher, listener);
 
-			CommandCenter commandCenter = new CommandCenterFactory().
-				setUrl(getDescriptor().getLrUrl()).
-				setVerbose(true).
-				authenticate(getDescriptor().getAuthToken()).
-				newCommandCenter();
+		CommandCenterFactory commandCenterFactory = new CommandCenterFactory().
+			setUrl(getDescriptor().getLrUrl()).
+			setVerbose(true).
+			authenticate(getDescriptor().getAuthToken());
 
-			new LiveRebelProxy(commandCenter, build.getWorkspace().list(artifacts), useCargo(), listener, deployPluginProxy).performRelease();
-		}
-		catch (IllegalArgumentException e) {
-			listener.getLogger().println("ERROR! " + e.getMessage());
-			return false;
-		}
-		catch (Conflict e) {
-			listener.getLogger().println("ERROR! " + e.getMessage());
-			return false;
-		}
-		catch (Forbidden e) {
-			listener.getLogger().println("ERROR! Access denied, invalid username or password.");
-			return false;
-		}
-		catch (Error e) {
-			listener.getLogger().println("ERROR! Unexpected error received from server.");
-			listener.getLogger().println();
-			listener.getLogger().println("URL: " + e.getURL());
-			listener.getLogger().println("Status code: " + e.getStatus());
-			listener.getLogger().println("Nessage: " + e.getMessage());
-			return false;
-		}
-		catch (ParseException e) {
-			listener.getLogger().println("ERROR! Unable to read server response.");
-			listener.getLogger().println();
-			listener.getLogger().println("Response: " + e.getResponse());
-			listener.getLogger().println("Reason: " + e.getMessage());
-			return false;
-		}
-		catch (ConnectException e) {
-			listener.getLogger().println("ERROR! Unable to connect to server.");
-			listener.getLogger().println();
-			listener.getLogger().println("URL: " + e.getURL());
-			listener.getLogger().println("Reason: " + e.getMessage());
-			return false;
-		}
-		catch (Throwable t) {
-			listener.getLogger().println("ERROR! Unexpected error occured:");
-			listener.getLogger().println();
-			t.printStackTrace(listener.getLogger());
-			return false;
-		}
-		return true;
+		return new LiveRebelProxy(commandCenterFactory, build.getWorkspace().list(artifacts), useCargo(), listener, deployPluginProxy).performRelease();
 	}
 
 	// Overridden for better type safety.

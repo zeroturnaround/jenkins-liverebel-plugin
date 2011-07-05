@@ -10,12 +10,9 @@
 	<url>http://wiki.jenkins-ci.org/display/JENKINS/LiveRebel+Deploy+Plugin</url>
 
 	<parent>
-		<groupId>org.jenkins-ci.plugins</groupId>
-		<artifactId>plugin</artifactId>
-		<version>1.414</version><!-- which version of Jenkins is this plugin built against? -->
-		<!--groupId>org.jvnet.hudson.plugins</groupId>
+		<groupId>org.jvnet.hudson.plugins</groupId>
 		<artifactId>hudson-plugin-parent</artifactId>
-		<version>2.0.1</version--><!-- which version of Hudson is this plugin built against? -->
+		<version>2.0.1</version><!-- which version of Hudson is this plugin built against? -->
 	</parent>
 
 	<distributionManagement>

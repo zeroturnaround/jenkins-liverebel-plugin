@@ -16,10 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 *****************************************************************/
 
-import com.zeroturnaround.liverebel.api.ApplicationInfo;
-import com.zeroturnaround.liverebel.api.CommandCenter;
-import com.zeroturnaround.liverebel.api.DuplicationException;
-import com.zeroturnaround.liverebel.api.UploadInfo;
+import com.zeroturnaround.liverebel.api.*;
+import com.zeroturnaround.liverebel.api.Error;
 import com.zeroturnaround.liverebel.api.diff.DiffResult;
 import com.zeroturnaround.liverebel.api.diff.Event;
 import com.zeroturnaround.liverebel.api.diff.Item;
@@ -31,32 +29,104 @@ import hudson.model.BuildListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.zip.ZipException;
 
 /**
  * @author Juri Timoshin
  */
 public class LiveRebelProxy {
 
-	private final CommandCenter commandCenter;
+	private final CommandCenterFactory commandCenterFactory;
+	private CommandCenter commandCenter;
 	private final FilePath[] wars;
 	private final boolean useCargo;
 	private final BuildListener listener;
 	private final DeployPluginProxy deployPluginProxy;
 
-	public LiveRebelProxy(CommandCenter center, FilePath[] warFiles, boolean useCargoIfIncompatible, BuildListener listener, DeployPluginProxy deployPluginProxy) {
-		commandCenter = center;
+	public LiveRebelProxy(CommandCenterFactory centerFactory, FilePath[] warFiles, boolean useCargoIfIncompatible, BuildListener listener, DeployPluginProxy deployPluginProxy) {
+		commandCenterFactory = centerFactory;
 		wars = warFiles;
 		this.useCargo = useCargoIfIncompatible;
 		this.listener = listener;
 		this.deployPluginProxy = deployPluginProxy;
 	}
 
-	public void performRelease() throws IOException, InterruptedException {
+	public boolean performRelease() throws IOException, InterruptedException {
+		if (wars.length == 0){
+			listener.getLogger().println("Could not find any artifact to deploy. Please, specify it in job configuration.");
+			return false;
+		}
+
+		if (!initCommandCenter()) return false;
+		boolean result = true;
+
 		for (FilePath warFile : wars){
-			LiveRebelXml lrXml = getLiveRebelXml(warFile);
-			ApplicationInfo applicationInfo = commandCenter.getApplication(lrXml.getApplicationId());
-			uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
-			update(lrXml, applicationInfo, warFile);
+			try {
+				listener.getLogger().printf("\nProcessing artifact: %s\n", warFile);
+				LiveRebelXml lrXml = getLiveRebelXml(warFile);
+				ApplicationInfo applicationInfo = commandCenter.getApplication(lrXml.getApplicationId());
+				uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
+				update(lrXml, applicationInfo, warFile);
+				listener.getLogger().printf("SUCCESS. Artifact deployed: %s\n", warFile);
+			}
+			catch (IllegalArgumentException e) {
+				listener.getLogger().println("ERROR! " + e.getMessage());
+				result = false;
+			}
+			catch (Error e) {
+				listener.getLogger().println("ERROR! Unexpected error received from server.");
+				listener.getLogger().println();
+				listener.getLogger().println("URL: " + e.getURL());
+				listener.getLogger().println("Status code: " + e.getStatus());
+				listener.getLogger().println("Message: " + e.getMessage());
+				result = false;
+			}
+			catch (ParseException e) {
+				listener.getLogger().println("ERROR! Unable to read server response.");
+				listener.getLogger().println();
+				listener.getLogger().println("Response: " + e.getResponse());
+				listener.getLogger().println("Reason: " + e.getMessage());
+				result = false;
+			}
+			catch (RuntimeException e){
+				if (e.getCause() instanceof ZipException){
+					listener.getLogger().printf("ERROR! Unable to read artifact (%s). The file you trying to deploy is not an artifact or may be corrupted.\n", warFile);
+				}
+				else {
+					listener.getLogger().println("ERROR! Unexpected error occured:");
+					listener.getLogger().println();
+					e.printStackTrace(listener.getLogger());
+				}
+				result = false;
+			}
+			catch (Throwable t) {
+				listener.getLogger().println("ERROR! Unexpected error occured:");
+				listener.getLogger().println();
+				t.printStackTrace(listener.getLogger());
+				result = false;
+			}
+		}
+		return result;
+	}
+
+	private boolean initCommandCenter() {
+		try{
+			commandCenter = commandCenterFactory.newCommandCenter();
+			return true;
+		}
+		catch (Forbidden e) {
+			listener.getLogger().println("ERROR! Access denied. Please, navigate to Jenkins Configuration to specify LiveRebel Authentication Token.");
+			return false;
+		}
+		catch (ConnectException e) {
+			listener.getLogger().println("ERROR! Unable to connect to server.");
+			listener.getLogger().println();
+			listener.getLogger().println("URL: " + e.getURL());
+			if (e.getURL().equals("https://"))
+				listener.getLogger().println("Please, navigate to Jenkins Configuration to specify running LiveRebel Url.");
+			else
+				listener.getLogger().println("Reason: " + e.getMessage());
+			return false;
 		}
 	}
 
@@ -110,12 +180,13 @@ public class LiveRebelProxy {
 	private DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
 		DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
 		listener.getLogger().println("Compatibility: " + diffResult.getCompatibility());
+		listener.getLogger().println();
 		for (Item item : diffResult.getItems()) {
 			listener.getLogger().printf("%s\t%s\t%s\n", item.getDirection(), item.getPath(), item.getElement());
 			for (Event event : item.getEvents())
 				listener.getLogger().printf(" - %s\t%s\t%s\n", event.getLevel(), event.getDescription(), event.getEffect());
+			}
 		listener.getLogger().println();
-	}
 		return diffResult;
 	}
 

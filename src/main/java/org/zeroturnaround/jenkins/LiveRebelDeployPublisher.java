@@ -135,7 +135,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 				return FormValidation.error("Please, provide right authentication token!");
 			}
 			catch (ConnectException e){
-				return FormValidation.error("Could not connect to LiveRebel Url (%s). LiveRebel should be running.", e.getURL());
+				return FormValidation.error("Could not connect to LiveRebel at (%s)", e.getURL());
 			}
 			catch (Exception e) {
 				return FormValidation.error(e.getMessage());

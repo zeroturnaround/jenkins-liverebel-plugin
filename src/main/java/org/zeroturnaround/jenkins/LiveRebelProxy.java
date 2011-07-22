@@ -181,7 +181,7 @@ public class LiveRebelProxy {
 
 	private DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
 		DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
-		//diffResult.print(listener.getLogger());
+		diffResult.print(listener.getLogger());
 		listener.getLogger().println("Compatibility: " + diffResult.getCompatibility());
 		listener.getLogger().println();
 		for (Item item : diffResult.getItems()) {

@@ -7,7 +7,7 @@
 		<f:textbox />
 	</f:entry>
 
-	<f:entry field="useLiverebelIfCompatibleWithWarnings" help="/plugin/liverebel-deploy/help-useLiverebelIfCompatibleWithWarnings.html">
+	<f:entry field="useLiverebelIfCompatibleWithWarnings">
 		<f:checkbox name="useLiverebelIfCompatibleWithWarnings" checked="${instance.useLiverebelIfCompatibleWithWarnings}"/>
 		<label class="attach-previous">${%Deploy 'Compatible with Warnings' with LiveRebel}</label>
 	</f:entry>

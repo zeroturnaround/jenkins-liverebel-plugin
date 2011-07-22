@@ -19,8 +19,7 @@ limitations under the License.
 import com.zeroturnaround.liverebel.api.*;
 import com.zeroturnaround.liverebel.api.Error;
 import com.zeroturnaround.liverebel.api.diff.DiffResult;
-import com.zeroturnaround.liverebel.api.diff.Event;
-import com.zeroturnaround.liverebel.api.diff.Item;
+import com.zeroturnaround.liverebel.api.diff.Level;
 import com.zeroturnaround.liverebel.util.LiveApplicationUtil;
 import com.zeroturnaround.liverebel.util.LiveRebelXml;
 import hudson.FilePath;
@@ -160,7 +159,7 @@ public class LiveRebelProxy {
 			}
 			else {
 				DiffResult diffResult = getDifferences(lrXml, activeVersion);
-				if (diffResult.getCompatibility().equals("compatible") || diffResult.getCompatibility().equals("compatible with warnings") && useLiverebelIfCompatibleWithWarnings){
+				if (diffResult.getMaxLevel() == Level.INFO || diffResult.getMaxLevel() == Level.WARNING && useLiverebelIfCompatibleWithWarnings){
 					listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server );
 					commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId()).execute();
 					listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
@@ -182,14 +181,6 @@ public class LiveRebelProxy {
 	private DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
 		DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
 		diffResult.print(listener.getLogger());
-		listener.getLogger().println("Compatibility: " + diffResult.getCompatibility());
-		listener.getLogger().println();
-		for (Item item : diffResult.getItems()) {
-			listener.getLogger().printf("%s\t%s\t%s\n", item.getDirection(), item.getPath(), item.getElement());
-			for (Event event : item.getEvents())
-				listener.getLogger().printf(" - %s\t%s\t%s\n", event.getLevel(), event.getDescription(), event.getEffect());
-			}
-		listener.getLogger().println();
 		return diffResult;
 	}
 

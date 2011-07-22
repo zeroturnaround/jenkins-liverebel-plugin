@@ -39,14 +39,16 @@ public class LiveRebelProxy {
 	private final CommandCenterFactory commandCenterFactory;
 	private CommandCenter commandCenter;
 	private final FilePath[] wars;
-	private final boolean useCargo;
+	private final boolean useCargoIfIncompatible;
+	private final boolean useLiverebelIfCompatibleWithWarnings;
 	private final BuildListener listener;
 	private final DeployPluginProxy deployPluginProxy;
 
-	public LiveRebelProxy(CommandCenterFactory centerFactory, FilePath[] warFiles, boolean useCargoIfIncompatible, BuildListener listener, DeployPluginProxy deployPluginProxy) {
+	public LiveRebelProxy(CommandCenterFactory centerFactory, FilePath[] warFiles, boolean useCargoIfIncompatible, boolean useLiverebelIfCompatibleWithWarnings, BuildListener listener, DeployPluginProxy deployPluginProxy) {
 		commandCenterFactory = centerFactory;
 		wars = warFiles;
-		this.useCargo = useCargoIfIncompatible;
+		this.useCargoIfIncompatible = useCargoIfIncompatible;
+		this.useLiverebelIfCompatibleWithWarnings = useLiverebelIfCompatibleWithWarnings;
 		this.listener = listener;
 		this.deployPluginProxy = deployPluginProxy;
 	}
@@ -151,14 +153,14 @@ public class LiveRebelProxy {
 		}
 		else {
 			listener.getLogger().printf("Server: %s, active version on server: %s.\n", server, activeVersion);
-		
+
 			if (activeVersion.equals(lrXml.getVersionId())){
 				listener.getLogger().println("Current version is already running on server. No need to update.");
 				return true;
 			}
 			else {
 				DiffResult diffResult = getDifferences(lrXml, activeVersion);
-				if (diffResult.getCompatibility().startsWith("compatible")){
+				if (diffResult.getCompatibility().equals("compatible") || diffResult.getCompatibility().equals("compatible with warnings") && useLiverebelIfCompatibleWithWarnings){
 					listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server );
 					commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId()).execute();
 					listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
@@ -172,13 +174,14 @@ public class LiveRebelProxy {
 	}
 
 	private boolean cargoDeploy(FilePath warfile) throws IOException, InterruptedException {
-		if (useCargo) return deployPluginProxy.cargoDeploy(warfile);
+		if (useCargoIfIncompatible) return deployPluginProxy.cargoDeploy(warfile);
 		listener.getLogger().println("Fallback to cargo deploy is disabled. Doing nothing.");
 		return false;
 	}
 
 	private DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
 		DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
+		//diffResult.print(listener.getLogger());
 		listener.getLogger().println("Compatibility: " + diffResult.getCompatibility());
 		listener.getLogger().println();
 		for (Item item : diffResult.getItems()) {

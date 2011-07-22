@@ -7,9 +7,14 @@
 		<f:textbox />
 	</f:entry>
 
+	<f:entry field="useLiverebelIfCompatibleWithWarnings" help="/plugin/liverebel-deploy/help-useLiverebelIfCompatibleWithWarnings.html">
+		<f:checkbox name="useLiverebelIfCompatibleWithWarnings" checked="${instance.useLiverebelIfCompatibleWithWarnings}"/>
+		<label class="attach-previous">${%Deploy 'Compatible with Warnings' with LiveRebel}</label>
+	</f:entry>
+
 	<f:nested>
 		<table>
-			<f:optionalBlock inline="true" title="Fallback to cargo deploy if new version is incompatible." checked="${instance.useCargo()}">
+			<f:optionalBlock inline="true" title="Fallback to cargo deploy, if not deploying with LiveRebel." checked="${instance.useCargo()}">
 				<f:dropdownList name="adapter" title="${%Container}">
 					<j:forEach var="d" items="${descriptor.containerAdapters}" varStatus="loop">
 						<f:dropdownListBlock value="${d.clazz.name}" title="${d.displayName}" selected="${instance.adapter.descriptor==d}">

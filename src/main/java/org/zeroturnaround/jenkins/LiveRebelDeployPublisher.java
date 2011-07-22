@@ -43,16 +43,14 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 @SuppressWarnings("UnusedDeclaration")
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
 	public final String artifacts;
 	public final ContainerAdapter adapter;
+	public final boolean useLiverebelIfCompatibleWithWarnings;
 
 	public boolean useCargo() {
 		return adapter != null;
@@ -60,9 +58,10 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
 	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public LiveRebelDeployPublisher(String artifacts, ContainerAdapter adapter) {
+	public LiveRebelDeployPublisher(String artifacts, ContainerAdapter adapter, boolean useLiverebelIfCompatibleWithWarnings) {
 		this.artifacts = artifacts;
 		this.adapter = adapter;
+		this.useLiverebelIfCompatibleWithWarnings=useLiverebelIfCompatibleWithWarnings;
 	}
 
 	@Override
@@ -76,7 +75,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 			setVerbose(true).
 			authenticate(getDescriptor().getAuthToken());
 
-		return new LiveRebelProxy(commandCenterFactory, build.getWorkspace().list(artifacts), useCargo(), listener, deployPluginProxy).performRelease();
+		return new LiveRebelProxy(commandCenterFactory, build.getWorkspace().list(artifacts), useCargo(), useLiverebelIfCompatibleWithWarnings, listener, deployPluginProxy).performRelease();
 	}
 
 	// Overridden for better type safety.

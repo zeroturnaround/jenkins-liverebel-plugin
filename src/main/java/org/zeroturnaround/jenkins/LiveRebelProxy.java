@@ -61,9 +61,10 @@ public class LiveRebelProxy {
 		if (!initCommandCenter()) return false;
 		boolean result = true;
 
+		listener.getLogger().println("Deploying artifacts.");
 		for (FilePath warFile : wars){
 			try {
-				listener.getLogger().printf("\nProcessing artifact: %s\n", warFile);
+				listener.getLogger().printf("Processing artifact: %s\n", warFile);
 				LiveRebelXml lrXml = getLiveRebelXml(warFile);
 				ApplicationInfo applicationInfo = commandCenter.getApplication(lrXml.getApplicationId());
 				uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
@@ -181,6 +182,7 @@ public class LiveRebelProxy {
 	private DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
 		DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
 		diffResult.print(listener.getLogger());
+		listener.getLogger().println();
 		return diffResult;
 	}
 
@@ -190,7 +192,7 @@ public class LiveRebelProxy {
 			listener.getLogger().println("Current version of application is already uploaded. Skipping upload.");
 		}
 		else{
-			uploadArtifact(new File(warFile.toURI()));
+			uploadArtifact(new File(warFile.getRemote()));
 		}
 	}
 
@@ -207,8 +209,9 @@ public class LiveRebelProxy {
 	}
 
 	private LiveRebelXml getLiveRebelXml(FilePath warFile) throws IOException, InterruptedException {
-		LiveRebelXml lrXml = LiveApplicationUtil.findLiveRebelXml(new File(warFile.toURI()));
+		LiveRebelXml lrXml = LiveApplicationUtil.findLiveRebelXml(new File(warFile.getRemote()));
 		listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(), lrXml.getVersionId());
 		return lrXml;
 	}
+
 }

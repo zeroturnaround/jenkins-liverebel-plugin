@@ -28,10 +28,7 @@ import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.plugins.deploy.ContainerAdapter;
 import hudson.plugins.deploy.ContainerAdapterDescriptor;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Notifier;
-import hudson.tasks.Publisher;
+import hudson.tasks.*;
 import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.AncestorInPath;
@@ -40,10 +37,14 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 @SuppressWarnings("UnusedDeclaration")
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
@@ -66,7 +67,20 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-		if (!build.getResult().equals(Result.SUCCESS)) return false;
+		if (!build.getResult().isBetterOrEqualTo(Result.UNSTABLE)) return false;
+
+		FilePath[] deployableFiles;
+		if (build.getWorkspace().isRemote()){
+			File dir = build.getArtifactsDir();
+			//noinspection ResultOfMethodCallIgnored
+			dir.mkdirs();
+			build.getWorkspace().copyRecursiveTo(artifacts, "", new FilePath(dir));
+			new ArtifactArchiver(artifacts, "", true).perform(build, launcher, listener);
+			deployableFiles = new FilePath(build.getArtifactsDir()).list(artifacts);
+		}
+		else {
+			deployableFiles = build.getWorkspace().list(artifacts);
+		}
 
 		DeployPluginProxy deployPluginProxy = new DeployPluginProxy(adapter, build, launcher, listener);
 
@@ -75,7 +89,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 			setVerbose(true).
 			authenticate(getDescriptor().getAuthToken());
 
-		return new LiveRebelProxy(commandCenterFactory, build.getWorkspace().list(artifacts), useCargo(), useLiverebelIfCompatibleWithWarnings, listener, deployPluginProxy).performRelease();
+		return new LiveRebelProxy(commandCenterFactory, deployableFiles, useCargo(), useLiverebelIfCompatibleWithWarnings, listener, deployPluginProxy).performRelease();
 	}
 
 	// Overridden for better type safety.

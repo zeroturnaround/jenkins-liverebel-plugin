@@ -36,28 +36,27 @@ import java.util.zip.ZipException;
 public class LiveRebelProxy {
 
 	private final CommandCenterFactory commandCenterFactory;
-	private CommandCenter commandCenter;
-	private final FilePath[] wars;
-	private final boolean useCargoIfIncompatible;
-	private final boolean useLiverebelIfCompatibleWithWarnings;
 	private final BuildListener listener;
 	private final DeployPluginProxy deployPluginProxy;
 
-	public LiveRebelProxy(CommandCenterFactory centerFactory, FilePath[] warFiles, boolean useCargoIfIncompatible, boolean useLiverebelIfCompatibleWithWarnings, BuildListener listener, DeployPluginProxy deployPluginProxy) {
+	private CommandCenter commandCenter;
+	private boolean useCargoIfIncompatible;
+	private boolean useLiverebelIfCompatibleWithWarnings;
+
+	public LiveRebelProxy(CommandCenterFactory centerFactory, BuildListener listener, DeployPluginProxy deployPluginProxy) {
 		commandCenterFactory = centerFactory;
-		wars = warFiles;
-		this.useCargoIfIncompatible = useCargoIfIncompatible;
-		this.useLiverebelIfCompatibleWithWarnings = useLiverebelIfCompatibleWithWarnings;
 		this.listener = listener;
 		this.deployPluginProxy = deployPluginProxy;
 	}
 
-	public boolean performRelease() throws IOException, InterruptedException {
+	public boolean perform(FilePath[] wars, boolean useCargoIfIncompatible, boolean useLiverebelIfCompatibleWithWarnings) throws IOException, InterruptedException {
 		if (wars.length == 0){
 			listener.getLogger().println("Could not find any artifact to deploy. Please, specify it in job configuration.");
 			return false;
 		}
 
+		this.useCargoIfIncompatible = useCargoIfIncompatible;
+		this.useLiverebelIfCompatibleWithWarnings = useLiverebelIfCompatibleWithWarnings;
 		if (!initCommandCenter()) return false;
 		boolean result = true;
 

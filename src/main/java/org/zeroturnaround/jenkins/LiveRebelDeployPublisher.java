@@ -37,7 +37,6 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.servlet.ServletException;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
@@ -71,10 +70,6 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
 		FilePath[] deployableFiles;
 		if (build.getWorkspace().isRemote()){
-			File dir = build.getArtifactsDir();
-			//noinspection ResultOfMethodCallIgnored
-			dir.mkdirs();
-			build.getWorkspace().copyRecursiveTo(artifacts, "", new FilePath(dir));
 			new ArtifactArchiver(artifacts, "", true).perform(build, launcher, listener);
 			deployableFiles = new FilePath(build.getArtifactsDir()).list(artifacts);
 		}
@@ -89,7 +84,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 			setVerbose(true).
 			authenticate(getDescriptor().getAuthToken());
 
-		return new LiveRebelProxy(commandCenterFactory, deployableFiles, useCargo(), useLiverebelIfCompatibleWithWarnings, listener, deployPluginProxy).performRelease();
+		return new LiveRebelProxy(commandCenterFactory, listener, deployPluginProxy).perform(deployableFiles, useCargo(), useLiverebelIfCompatibleWithWarnings);
 	}
 
 	// Overridden for better type safety.

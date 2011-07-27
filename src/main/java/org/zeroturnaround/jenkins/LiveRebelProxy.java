@@ -110,7 +110,7 @@ public class LiveRebelProxy {
 		return result;
 	}
 
-	private boolean initCommandCenter() {
+	boolean initCommandCenter() {
 		try{
 			commandCenter = commandCenterFactory.newCommandCenter();
 			return true;
@@ -131,11 +131,11 @@ public class LiveRebelProxy {
 		}
 	}
 
-	private boolean isFirstRelease( ApplicationInfo applicationInfo ){
+	boolean isFirstRelease( ApplicationInfo applicationInfo ){
 		return applicationInfo == null;
 	}
 
-	private void update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warfile) throws IOException, InterruptedException {
+	void update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warfile) throws IOException, InterruptedException {
 		listener.getLogger().println("Starting updating application on servers:");
 		if (isFirstRelease(applicationInfo))
 			for (String server : commandCenter.getServers().keySet())
@@ -145,7 +145,7 @@ public class LiveRebelProxy {
 				updateOnServer(lrXml, versionWithServer.getKey(), versionWithServer.getValue(), warfile);
 	}
 
-	private boolean updateOnServer(LiveRebelXml lrXml, String server, String activeVersion, FilePath warfile) throws IOException, InterruptedException {
+	boolean updateOnServer(LiveRebelXml lrXml, String server, String activeVersion, FilePath warfile) throws IOException, InterruptedException {
 		if (activeVersion.length() == 0){
 			listener.getLogger().printf("There is no such application on server %s.\n", server);
 			return cargoDeploy(warfile);
@@ -172,20 +172,20 @@ public class LiveRebelProxy {
 		}
 	}
 
-	private boolean cargoDeploy(FilePath warfile) throws IOException, InterruptedException {
+	boolean cargoDeploy(FilePath warfile) throws IOException, InterruptedException {
 		if (useCargoIfIncompatible) return deployPluginProxy.cargoDeploy(warfile);
 		listener.getLogger().println("Fallback to cargo deploy is disabled. Doing nothing.");
 		return false;
 	}
 
-	private DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
+	DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
 		DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
 		diffResult.print(listener.getLogger());
 		listener.getLogger().println();
 		return diffResult;
 	}
 
-	private void uploadIfNeeded(ApplicationInfo applicationInfo, String currentVersion, FilePath warFile) throws IOException, InterruptedException {
+	void uploadIfNeeded(ApplicationInfo applicationInfo, String currentVersion, FilePath warFile) throws IOException, InterruptedException {
 		if (applicationInfo == null) return;
 		if (applicationInfo.getVersions().contains(currentVersion)){
 			listener.getLogger().println("Current version of application is already uploaded. Skipping upload.");
@@ -195,7 +195,7 @@ public class LiveRebelProxy {
 		}
 	}
 
-	private boolean uploadArtifact(File artifact) throws IOException, InterruptedException {
+	boolean uploadArtifact(File artifact) throws IOException, InterruptedException {
 		try {
 			UploadInfo upload = commandCenter.upload(artifact);
 			listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());
@@ -207,7 +207,7 @@ public class LiveRebelProxy {
 		}
 	}
 
-	private LiveRebelXml getLiveRebelXml(FilePath warFile) throws IOException, InterruptedException {
+	LiveRebelXml getLiveRebelXml(FilePath warFile) throws IOException, InterruptedException {
 		LiveRebelXml lrXml = LiveApplicationUtil.findLiveRebelXml(new File(warFile.getRemote()));
 		listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(), lrXml.getVersionId());
 		return lrXml;

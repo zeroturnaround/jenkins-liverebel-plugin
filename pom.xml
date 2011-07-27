@@ -137,6 +137,25 @@
 			<optional>true</optional>
 			<scope>provided</scope><!-- not needed in runtime -->
 		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.8.5</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- This dependency should come before the junit dependency, if any.  -->
+		<dependency>
+			<groupId>mockit</groupId>
+			<artifactId>jmockit</artifactId>
+			<version>0.999.10</version>
+			<scope>test</scope>
+		</dependency>
+		<!--dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.2</version>
+			<scope>test</scope>
+		</dependency-->
 	</dependencies>
 
 	<!-- get every artifact through maven.glassfish.org, which proxies all the artifacts that we need -->
@@ -154,6 +173,13 @@
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
+		</repository>
+		<repository>
+			<id>jmockit-svn</id>
+			<url>http://jmockit.googlecode.com/svn/maven-repo</url>
+			<releases>
+				<checksumPolicy>ignore</checksumPolicy>
+			</releases>
 		</repository>
 	</repositories>
 </project>

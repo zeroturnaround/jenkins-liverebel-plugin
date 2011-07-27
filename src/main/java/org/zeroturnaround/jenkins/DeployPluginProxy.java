@@ -41,7 +41,7 @@ public class DeployPluginProxy {
 		this.listener = listener;
 	}
 
-	public boolean cargoDeploy(FilePath warFile ) throws IOException, InterruptedException {
+	public boolean cargoDeploy(FilePath warFile) throws IOException, InterruptedException {
 		listener.getLogger().println("Deploying new artifact without LiveRebel...");
 		return adapter.redeploy(warFile, build, launcher, listener);
 	}

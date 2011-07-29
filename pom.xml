@@ -117,7 +117,7 @@
 		<dependency>
 			<groupId>com.zeroturnaround</groupId>
 			<artifactId>lr-api</artifactId>
-			<version>1.0.2-SNAPSHOT</version>
+			<version>1.0.1a</version>
 		</dependency>
 		<dependency>
 			<groupId>com.zeroturnaround</groupId>

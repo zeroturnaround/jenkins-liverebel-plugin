@@ -14,7 +14,7 @@
 
 	<f:nested>
 		<table>
-			<f:optionalBlock inline="true" title="Fallback to cargo deploy, if not deploying with LiveRebel." checked="${instance.useCargo()}">
+			<f:optionalBlock inline="true" title="Fallback to regular deploy if LiveRebel does not support the change." checked="${instance.useCargo()}">
 				<f:dropdownList name="adapter" title="${%Container}">
 					<j:forEach var="d" items="${descriptor.containerAdapters}" varStatus="loop">
 						<f:dropdownListBlock value="${d.clazz.name}" title="${d.displayName}" selected="${instance.adapter.descriptor==d}">

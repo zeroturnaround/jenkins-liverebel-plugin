@@ -45,6 +45,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * @author Juri Timoshin
+ */
 @SuppressWarnings("UnusedDeclaration")
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 

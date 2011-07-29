@@ -79,12 +79,12 @@
 		<dependency>
 			<groupId>com.zeroturnaround</groupId>
 			<artifactId>lr-api</artifactId>
-			<version>1.1-SNAPSHOT</version>
+			<version>1.0.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.zeroturnaround</groupId>
 			<artifactId>lr-util</artifactId>
-			<version>1.1</version>
+			<version>1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
@@ -100,22 +100,29 @@
 			<scope>provided</scope><!-- not needed in runtime -->
 		</dependency>
 		<dependency>
-			<groupId>org.powermock</groupId>
-			<artifactId>powermock-module-junit4</artifactId>
-			<version>${powermock.version}</version>
-			<scope>test</scope>
+			<groupId>org.jvnet.hudson.main</groupId>
+			<artifactId>hudson-test-harness</artifactId>
+			<version>1.389</version>
 		</dependency>
 		<dependency>
-			<groupId>org.powermock</groupId>
-			<artifactId>powermock-api-mockito</artifactId>
-			<version>${powermock.version}</version>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.8.5</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- This dependency should come before the junit dependency, if any.  -->
 		<dependency>
+			<groupId>mockit</groupId>
+			<artifactId>jmockit</artifactId>
+			<version>0.999.10</version>
+			<scope>test</scope>
+		</dependency>
+		<!--dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.8.2</version>
-		</dependency>
+			<scope>test</scope>
+		</dependency-->
 	</dependencies>
 
 	<!-- get every artifact through maven.glassfish.org, which proxies all the artifacts that we need -->
@@ -133,6 +140,13 @@
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
+		</repository>
+		<repository>
+			<id>jmockit-svn</id>
+			<url>http://jmockit.googlecode.com/svn/maven-repo</url>
+			<releases>
+				<checksumPolicy>ignore</checksumPolicy>
+			</releases>
 		</repository>
 	</repositories>
 </project>

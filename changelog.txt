@@ -1,0 +1,7 @@
+********************************************
+  LiveRebel Deploy Plugin Changelog                    
+********************************************
+
+1.0-M1 (29th July 2011)
+
+* Initial binary release of the plugin   

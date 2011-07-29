@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>liverebel-deploy</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.0-M1-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 	<name>LiveRebel Deploy Plugin</name>
 	<description>LiveRebel Deploy Plugin helps to run updates to your JEE containers faster. LiveRebel is tool for hot updates without downtime,
@@ -12,7 +12,7 @@
 	<parent>
 		<groupId>org.jenkins-ci.plugins</groupId>
 		<artifactId>plugin</artifactId>
-		<version>1.414</version><!-- which version of Jenkins is this plugin built against? -->
+		<version>1.423</version><!-- which version of Jenkins is this plugin built against? -->
 	</parent>
 
 	<distributionManagement>

@@ -39,8 +39,8 @@ public class LiveRebelProxy {
 	private final BuildListener listener;
 	private final DeployPluginProxy deployPluginProxy;
 
-	private CommandCenter commandCenter;
-	private boolean useCargoIfIncompatible;
+	CommandCenter commandCenter;
+	boolean useCargoIfIncompatible;
 	private boolean useLiverebelIfCompatibleWithWarnings;
 
 	public LiveRebelProxy(CommandCenterFactory centerFactory, BuildListener listener, DeployPluginProxy deployPluginProxy) {

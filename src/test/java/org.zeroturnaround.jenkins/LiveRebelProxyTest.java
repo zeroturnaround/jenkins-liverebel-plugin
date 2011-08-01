@@ -17,6 +17,7 @@ limitations under the License.
 *****************************************************************/
 
 import com.zeroturnaround.liverebel.api.*;
+import com.zeroturnaround.liverebel.api.diff.DiffResult;
 import com.zeroturnaround.liverebel.util.LiveApplicationUtil;
 import com.zeroturnaround.liverebel.util.LiveRebelXml;
 import hudson.FilePath;
@@ -63,18 +64,13 @@ public class LiveRebelProxyTest extends HudsonTestCase {
 		super.setUp();
 	}
 
-    public void tearDown() throws Exception {
-        super.tearDown();
-    }
+	public void tearDown() throws Exception {
+		super.tearDown();
+	}
 
-    /**
-     *
-     * Method: perform(FilePath[] wars, boolean useCargoIfIncompatible, boolean useLiverebelIfCompatibleWithWarnings)
-     *
-     */
-    public void testPerform() throws Exception {
-        //TODO: Test goes here...
-    }
+	public void testPerform() throws Exception {
+		//TODO: Test goes here...
+	}
 
 
 	public void testInitCommandCenterSuccess() throws Exception {
@@ -188,43 +184,18 @@ public class LiveRebelProxyTest extends HudsonTestCase {
 		verify(printStreamMock).println("Fallback to cargo deploy is disabled. Doing nothing.");
 	}
 
-    /**
-     *
-     * Method: getDifferences(LiveRebelXml lrXml, String activeVersion)
-     *
-     */
-    public void testGetDifferences() throws Exception {
-        //TODO: Test goes here...
-        /*
-        try {
-           Method method = LiveRebelProxy.class.getMethod("getDifferences", LiveRebelXml.class, String.class);
-           method.setAccessible(true);
-           method.invoke(<Object>, <Parameters>);
-        } catch(NoSuchMethodException e) {
-        } catch(IllegalAccessException e) {
-        } catch(InvocationTargetException e) {
-        }
-        */
-        }
+	public void testGetDifferences() throws Exception {
+		lrProxy.commandCenter = commandCenterMock;
+		DiffResult diffResultMock = mock(DiffResult.class);
+		doReturn(diffResultMock).when(commandCenterMock).compare(lrXml.getApplicationId(), "1.3", lrXml.getVersionId(), false);
 
-    /**
-     *
-     * Method: uploadIfNeeded(ApplicationInfo applicationInfo, String currentVersion, FilePath warFile)
-     *
-     */
-    public void testUploadIfNeeded() throws Exception {
-        //TODO: Test goes here...
-        /*
-        try {
-           Method method = LiveRebelProxy.class.getMethod("uploadIfNeeded", ApplicationInfo.class, String.class, FilePath.class);
-           method.setAccessible(true);
-           method.invoke(<Object>, <Parameters>);
-        } catch(NoSuchMethodException e) {
-        } catch(IllegalAccessException e) {
-        } catch(InvocationTargetException e) {
-        }
-        */
-        }
+		assertEquals(diffResultMock, lrProxy.getDifferences(lrXml, "1.3"));
+		verify(diffResultMock).print(printStreamMock);
+	}
+
+	public void testUploadIfNeeded() throws Exception {
+		//TODO: Test goes here...
+	}
 
 	public void testUploadArtifact() throws Exception {
 		UploadInfo uploadInfoMock = mock(UploadInfo.class);

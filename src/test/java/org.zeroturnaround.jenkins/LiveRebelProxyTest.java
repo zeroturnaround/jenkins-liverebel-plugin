@@ -42,16 +42,16 @@ import static org.mockito.Mockito.*;
  */
 public class LiveRebelProxyTest extends HudsonTestCase {
 
-	@Mocked private final LiveApplicationUtil unused = null;
+	@Mocked final LiveApplicationUtil unused = null;
 	@Mock private CommandCenterFactory ccfMock;
 	@Mock private CommandCenter commandCenterMock;
 	@Mock private BuildListener listenerMock;
 	@Mock private DeployPluginProxy deployPluginProxyMock;
 	@Mock private PrintStream printStreamMock;
 
-	LiveRebelProxy lrProxy;
-	final FilePath war = new FilePath( Hudson.MasterComputer.localChannel , "/some/irrelevant/path");
-	final LiveRebelXml lrXml = new LiveRebelXml("TestApplication", "1.4");
+	private final LiveRebelProxy lrProxy;
+	private final FilePath war = new FilePath( Hudson.MasterComputer.localChannel , "/some/irrelevant/path");
+	private final LiveRebelXml lrXml = new LiveRebelXml("TestApplication", "1.4");
 
 
 	public LiveRebelProxyTest(String name) {

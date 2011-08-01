@@ -33,6 +33,7 @@ import org.mockito.MockitoAnnotations;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import static org.mockito.Mockito.*;
 
@@ -58,6 +59,7 @@ public class LiveRebelProxyTest extends HudsonTestCase {
 		MockitoAnnotations.initMocks(this);
 		when(listenerMock.getLogger()).thenReturn(printStreamMock);
 		lrProxy = new LiveRebelProxy(ccfMock, listenerMock, deployPluginProxyMock);
+
 	}
 
 	public void setUp() throws Exception {
@@ -68,7 +70,7 @@ public class LiveRebelProxyTest extends HudsonTestCase {
 		super.tearDown();
 	}
 
-	public void testPerform() throws Exception {
+	public void testPerformSuccess() throws Exception {
 		//TODO: Test goes here...
 	}
 
@@ -193,8 +195,27 @@ public class LiveRebelProxyTest extends HudsonTestCase {
 		verify(diffResultMock).print(printStreamMock);
 	}
 
-	public void testUploadIfNeeded() throws Exception {
-		//TODO: Test goes here...
+	public void testUploadIfNeededAlreadyUploaded() throws Exception {
+		ApplicationInfo applicationInfoMock = mock(ApplicationInfo.class);
+		doReturn(new HashSet<String>(){{ add("1.3"); add("1.4");}}).when(applicationInfoMock).getVersions();
+
+		lrProxy.uploadIfNeeded(applicationInfoMock, "1.4", war);
+		verify(printStreamMock).println("Current version of application is already uploaded. Skipping upload.");
+	}
+
+	public void testUploadIfNeededUpload() throws Exception {
+		ApplicationInfo applicationInfoMock = mock(ApplicationInfo.class);
+		doReturn(new HashSet<String>(){{ add("1.3");}}).when(applicationInfoMock).getVersions();
+
+		LiveRebelProxy lrProxySpy = spy(lrProxy);
+		doReturn(true).when(lrProxySpy).uploadArtifact(Matchers.<File>any());
+
+		lrProxySpy.uploadIfNeeded(applicationInfoMock, "1.4", war);
+		verify(lrProxySpy).uploadArtifact(new File(war.getRemote()));
+	}
+
+	public void testUploadIfNeededApplicationInfoNull() throws Exception {
+		lrProxy.uploadIfNeeded(null, "1.4", war);
 	}
 
 	public void testUploadArtifact() throws Exception {

@@ -42,11 +42,17 @@ import static org.mockito.Mockito.*;
  */
 public class LiveRebelProxyTest extends HudsonTestCase {
 
+	@SuppressWarnings("UnusedDeclaration")
 	@Mocked final LiveApplicationUtil unused = null;
+	@SuppressWarnings("UnusedDeclaration")
 	@Mock private CommandCenterFactory ccfMock;
+	@SuppressWarnings("UnusedDeclaration")
 	@Mock private CommandCenter commandCenterMock;
+	@SuppressWarnings("UnusedDeclaration")
 	@Mock private BuildListener listenerMock;
+	@SuppressWarnings("UnusedDeclaration")
 	@Mock private DeployPluginProxy deployPluginProxyMock;
+	@SuppressWarnings("UnusedDeclaration")
 	@Mock private PrintStream printStreamMock;
 
 	private final LiveRebelProxy lrProxy;
@@ -137,7 +143,7 @@ public class LiveRebelProxyTest extends HudsonTestCase {
 
 	public void testUpdateWhenFirstReleaseSuccess() throws Exception {
 		lrProxy.commandCenter = commandCenterMock;
-		doReturn(new HashMap(){
+		doReturn(new HashMap<String, String>(){
 			{ put("server1", "serverInfo1"); put("server2", "serverInfo2");}
 		}).when(commandCenterMock).getServers();
 

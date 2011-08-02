@@ -24,8 +24,8 @@ import hudson.model.Hudson;
 import hudson.plugins.deploy.ContainerAdapter;
 import hudson.plugins.deploy.tomcat.Tomcat6xAdapter;
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jvnet.hudson.test.HudsonTestCase;
 
 import java.io.PrintStream;
 
@@ -35,7 +35,8 @@ import static org.mockito.Mockito.*;
  * @author Juri Timoshin
  */
 
-public class DeployPluginProxyTest extends HudsonTestCase {
+public class DeployPluginProxyTest extends TestCase {
+
 	public DeployPluginProxyTest(String name) {
 		super(name);
 	}

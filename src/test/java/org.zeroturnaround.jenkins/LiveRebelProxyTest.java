@@ -23,9 +23,9 @@ import com.zeroturnaround.liverebel.util.LiveRebelXml;
 import hudson.FilePath;
 import hudson.model.BuildListener;
 import hudson.model.Hudson;
+import junit.framework.TestCase;
 import mockit.Expectations;
 import mockit.Mocked;
-import org.jvnet.hudson.test.HudsonTestCase;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author Juri Timoshin
  */
-public class LiveRebelProxyTest extends HudsonTestCase {
+public class LiveRebelProxyTest extends TestCase {
 
 	@SuppressWarnings("UnusedDeclaration")
 	@Mocked final LiveApplicationUtil unused = null;
@@ -76,10 +76,36 @@ public class LiveRebelProxyTest extends HudsonTestCase {
 		super.tearDown();
 	}
 
-	public void testPerformSuccess() throws Exception {
-		//TODO: Test goes here...
+	public void testPerformNoWars() throws Exception {
+		assertFalse(lrProxy.perform(new FilePath[]{}, false, false));
+		verify(printStreamMock).println("Could not find any artifact to deploy. Please, specify it in job configuration.");
 	}
 
+	public void testPerformFailInitCommandCenter() throws Exception {
+		LiveRebelProxy lrProxySpy = spy(lrProxy);
+		doReturn(false).when(lrProxySpy).initCommandCenter();
+		assertFalse(lrProxySpy.perform(new FilePath[]{war}, false, false));
+	}
+
+	public void testPerformSuccess() throws Exception {
+		LiveRebelProxy lrProxySpy = spy(lrProxy);
+		doReturn(lrXml).when(lrProxySpy).getLiveRebelXml(war);
+		ApplicationInfo applicationInfoMock = mock(ApplicationInfo.class);
+		doReturn(applicationInfoMock).when(commandCenterMock).getApplication(lrXml.getApplicationId());
+		doReturn(true).when(lrProxySpy).initCommandCenter();
+		lrProxySpy.commandCenter = commandCenterMock;
+		doNothing().when(lrProxySpy).uploadIfNeeded(applicationInfoMock, "1.4", war);
+		doNothing().when(lrProxySpy).update(lrXml, applicationInfoMock, war);
+
+		lrProxySpy.perform(new FilePath[]{war}, false, false);
+
+		verify(printStreamMock).printf("Processing artifact: %s\n", war);
+		verify(lrProxySpy).getLiveRebelXml(war);
+		verify(commandCenterMock).getApplication(lrXml.getApplicationId());
+		verify(lrProxySpy).uploadIfNeeded(applicationInfoMock, "1.4", war);
+		verify(lrProxySpy).update(lrXml, applicationInfoMock, war);
+		verify(printStreamMock).printf("SUCCESS. Artifact deployed: %s\n", war);
+	}
 
 	public void testInitCommandCenterSuccess() throws Exception {
 		when(ccfMock.newCommandCenter()).thenReturn(commandCenterMock);

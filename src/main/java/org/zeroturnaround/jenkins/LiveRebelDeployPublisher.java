@@ -106,9 +106,11 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
   public List<String> getDeployableServers() {
     List<String> list = new ArrayList<String>();
-    for (ServerCheckbox server : servers) {
-      list.add(server.getServer());
+    if (servers != null) {
+      for (ServerCheckbox server : servers)
+        list.add(server.getServer());
     }
+
     return list;
   }
 

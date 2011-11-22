@@ -7,210 +7,235 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*****************************************************************/
-
-import com.zeroturnaround.liverebel.api.*;
-import com.zeroturnaround.liverebel.api.Error;
-import com.zeroturnaround.liverebel.api.diff.DiffResult;
-import com.zeroturnaround.liverebel.api.diff.Level;
-import com.zeroturnaround.liverebel.util.LiveApplicationUtil;
-import com.zeroturnaround.liverebel.util.LiveRebelXml;
+ *****************************************************************/
 import hudson.FilePath;
 import hudson.model.BuildListener;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipException;
+
+import com.zeroturnaround.liverebel.api.ApplicationInfo;
+import com.zeroturnaround.liverebel.api.CommandCenter;
+import com.zeroturnaround.liverebel.api.CommandCenterFactory;
+import com.zeroturnaround.liverebel.api.ConnectException;
+import com.zeroturnaround.liverebel.api.DuplicationException;
+import com.zeroturnaround.liverebel.api.Error;
+import com.zeroturnaround.liverebel.api.Forbidden;
+import com.zeroturnaround.liverebel.api.ParseException;
+import com.zeroturnaround.liverebel.api.UploadInfo;
+import com.zeroturnaround.liverebel.api.diff.DiffResult;
+import com.zeroturnaround.liverebel.api.diff.Level;
+import com.zeroturnaround.liverebel.api.update.ConfigurableUpdate;
+import com.zeroturnaround.liverebel.util.LiveApplicationUtil;
+import com.zeroturnaround.liverebel.util.LiveRebelXml;
 
 /**
  * @author Juri Timoshin
  */
 public class LiveRebelProxy {
 
-	private final CommandCenterFactory commandCenterFactory;
-	private final BuildListener listener;
-	private final DeployPluginProxy deployPluginProxy;
+  private final CommandCenterFactory commandCenterFactory;
+  private final BuildListener listener;
+  CommandCenter commandCenter;
+  private boolean useOfflineUpdateIfCompatibleWithWarnings;
 
-	CommandCenter commandCenter;
-	boolean useCargoIfIncompatible;
-	private boolean useLiverebelIfCompatibleWithWarnings;
+  public LiveRebelProxy(CommandCenterFactory centerFactory, BuildListener listener) {
+    commandCenterFactory = centerFactory;
+    this.listener = listener;
+  }
 
-	public LiveRebelProxy(CommandCenterFactory centerFactory, BuildListener listener, DeployPluginProxy deployPluginProxy) {
-		commandCenterFactory = centerFactory;
-		this.listener = listener;
-		this.deployPluginProxy = deployPluginProxy;
-	}
+  public boolean perform(FilePath[] wars, List<String> deployableServers, boolean useOfflineUpdateIfCompatibleWithWarnings) throws IOException, InterruptedException {
+    if (wars.length == 0) {
+      listener.getLogger().println("Could not find any artifact to deploy. Please, specify it in job configuration.");
+      return false;
+    }
 
-	public boolean perform(FilePath[] wars, boolean useCargoIfIncompatible, boolean useLiverebelIfCompatibleWithWarnings) throws IOException, InterruptedException {
-		if (wars.length == 0){
-			listener.getLogger().println("Could not find any artifact to deploy. Please, specify it in job configuration.");
-			return false;
-		}
+    this.useOfflineUpdateIfCompatibleWithWarnings = useOfflineUpdateIfCompatibleWithWarnings;
 
-		this.useCargoIfIncompatible = useCargoIfIncompatible;
-		this.useLiverebelIfCompatibleWithWarnings = useLiverebelIfCompatibleWithWarnings;
-		if (!initCommandCenter()) return false;
-		boolean result = true;
+    if (!initCommandCenter()) {
+      return false;
+    }
+    boolean result = true;
 
-		listener.getLogger().println("Deploying artifacts.");
-		for (FilePath warFile : wars){
-			try {
-				listener.getLogger().printf("Processing artifact: %s\n", warFile);
-				LiveRebelXml lrXml = getLiveRebelXml(warFile);
-				ApplicationInfo applicationInfo = commandCenter.getApplication(lrXml.getApplicationId());
-				uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
-				update(lrXml, applicationInfo, warFile);
-				listener.getLogger().printf("SUCCESS. Artifact deployed: %s\n", warFile);
-			}
-			catch (IllegalArgumentException e) {
-				listener.getLogger().println("ERROR! " + e.getMessage());
-				result = false;
-			}
-			catch (Error e) {
-				listener.getLogger().println("ERROR! Unexpected error received from server.");
-				listener.getLogger().println();
-				listener.getLogger().println("URL: " + e.getURL());
-				listener.getLogger().println("Status code: " + e.getStatus());
-				listener.getLogger().println("Message: " + e.getMessage());
-				result = false;
-			}
-			catch (ParseException e) {
-				listener.getLogger().println("ERROR! Unable to read server response.");
-				listener.getLogger().println();
-				listener.getLogger().println("Response: " + e.getResponse());
-				listener.getLogger().println("Reason: " + e.getMessage());
-				result = false;
-			}
-			catch (RuntimeException e){
-				if (e.getCause() instanceof ZipException){
-					listener.getLogger().printf("ERROR! Unable to read artifact (%s). The file you trying to deploy is not an artifact or may be corrupted.\n", warFile);
-				}
-				else {
-					listener.getLogger().println("ERROR! Unexpected error occured:");
-					listener.getLogger().println();
-					e.printStackTrace(listener.getLogger());
-				}
-				result = false;
-			}
-			catch (Throwable t) {
-				listener.getLogger().println("ERROR! Unexpected error occured:");
-				listener.getLogger().println();
-				t.printStackTrace(listener.getLogger());
-				result = false;
-			}
-		}
-		return result;
-	}
+    listener.getLogger().println("Deploying artifacts.");
+    for (FilePath warFile : wars) {
+      try {
+        listener.getLogger().printf("Processing artifact: %s\n", warFile);
+        LiveRebelXml lrXml = getLiveRebelXml(warFile);
+        ApplicationInfo applicationInfo = commandCenter.getApplication(lrXml.getApplicationId());
+        uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
+        result = result && update(lrXml, applicationInfo, warFile, deployableServers);
+        listener.getLogger().printf("SUCCESS. Artifact deployed: %s\n", warFile);
+      }
+      catch (IllegalArgumentException e) {
+        listener.getLogger().println("ERROR! " + e.getMessage());
+        result = false;
+      }
+      catch (Error e) {
+        listener.getLogger().println("ERROR! Unexpected error received from server.");
+        listener.getLogger().println();
+        listener.getLogger().println("URL: " + e.getURL());
+        listener.getLogger().println("Status code: " + e.getStatus());
+        listener.getLogger().println("Message: " + e.getMessage());
+        result = false;
+      }
+      catch (ParseException e) {
+        listener.getLogger().println("ERROR! Unable to read server response.");
+        listener.getLogger().println();
+        listener.getLogger().println("Response: " + e.getResponse());
+        listener.getLogger().println("Reason: " + e.getMessage());
+        result = false;
+      }
+      catch (RuntimeException e) {
+        if (e.getCause() instanceof ZipException) {
+          listener.getLogger().printf(
+              "ERROR! Unable to read artifact (%s). The file you trying to deploy is not an artifact or may be corrupted.\n",
+              warFile);
+        }
+        else {
+          listener.getLogger().println("ERROR! Unexpected error occured:");
+          listener.getLogger().println();
+          e.printStackTrace(listener.getLogger());
+        }
+        result = false;
+      }
+      catch (Throwable t) {
+        listener.getLogger().println("ERROR! Unexpected error occured:");
+        listener.getLogger().println();
+        t.printStackTrace(listener.getLogger());
+        result = false;
+      }
+    }
+    return result;
+  }
 
-	boolean initCommandCenter() {
-		try{
-			commandCenter = commandCenterFactory.newCommandCenter();
-			return true;
-		}
-		catch (Forbidden e) {
-			listener.getLogger().println("ERROR! Access denied. Please, navigate to Jenkins Configuration to specify LiveRebel Authentication Token.");
-			return false;
-		}
-		catch (ConnectException e) {
-			listener.getLogger().println("ERROR! Unable to connect to server.");
-			listener.getLogger().println();
-			listener.getLogger().println("URL: " + e.getURL());
-			if (e.getURL().equals("https://"))
-				listener.getLogger().println("Please, navigate to Jenkins Configuration to specify running LiveRebel Url.");
-			else
-				listener.getLogger().println("Reason: " + e.getMessage());
-			return false;
-		}
-	}
+  boolean initCommandCenter() {
+    try {
+      commandCenter = commandCenterFactory.newCommandCenter();
+      return true;
+    }
+    catch (Forbidden e) {
+      listener.getLogger().println(
+          "ERROR! Access denied. Please, navigate to Jenkins Configuration to specify LiveRebel Authentication Token.");
+      return false;
+    }
+    catch (ConnectException e) {
+      listener.getLogger().println("ERROR! Unable to connect to server.");
+      listener.getLogger().println();
+      listener.getLogger().println("URL: " + e.getURL());
+      if (e.getURL().equals("https://")) {
+        listener.getLogger().println("Please, navigate to Jenkins Configuration to specify running LiveRebel Url.");
+      }
+      else {
+        listener.getLogger().println("Reason: " + e.getMessage());
+      }
+      return false;
+    }
+  }
 
-	boolean isFirstRelease( ApplicationInfo applicationInfo ){
-		return applicationInfo == null;
-	}
+  boolean isFirstRelease(ApplicationInfo applicationInfo) {
+    return applicationInfo == null;
+  }
 
-	void update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warfile) throws IOException, InterruptedException {
-		listener.getLogger().println("Starting updating application on servers:");
-		if (isFirstRelease(applicationInfo))
-			for (String server : commandCenter.getServers().keySet())
-				updateOnServer(lrXml, server, "", warfile);
-		else
-			for (Map.Entry<String, String> versionWithServer : applicationInfo.getActiveVersionPerServer().entrySet())
-				updateOnServer(lrXml, versionWithServer.getKey(), versionWithServer.getValue(), warfile);
-	}
+  boolean update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warfile,  List<String> deployableServers) throws IOException,
+      InterruptedException {
+    if (deployableServers.isEmpty()) {
+      listener.getLogger().println("No servers specified in LiveRebel configuration.");
+      return false;
+    }
+    listener.getLogger().println("Starting updating application on servers:");
+    boolean result = true;
+    if (isFirstRelease(applicationInfo)) {
+      result = deploy(lrXml, warfile, deployableServers);
+    }
+    else {
+      List<String> diff = new ArrayList<String>(deployableServers);
+      diff.removeAll(applicationInfo.getActiveVersionPerServer().keySet());
+      for (Map.Entry<String, String> versionWithServer : applicationInfo.getActiveVersionPerServer().entrySet()) {
+        if (diff.contains(versionWithServer.getKey())) {
+          continue;
+        }
+        result = result && activate(lrXml, versionWithServer.getKey(), versionWithServer.getValue(), warfile);
+      }
+      if (!diff.isEmpty()) {
+        deploy(lrXml, warfile, diff);
+      }
+    }
 
-	boolean updateOnServer(LiveRebelXml lrXml, String server, String activeVersion, FilePath warfile) throws IOException, InterruptedException {
-		if (activeVersion.length() == 0){
-			listener.getLogger().printf("There is no such application on server %s.\n", server);
-			return cargoDeploy(warfile);
-		}
-		else {
-			listener.getLogger().printf("Server: %s, active version on server: %s.\n", server, activeVersion);
+    return result;
+  }
 
-			if (activeVersion.equals(lrXml.getVersionId())){
-				listener.getLogger().println("Current version is already running on server. No need to update.");
-				return true;
-			}
-			else {
-				DiffResult diffResult = getDifferences(lrXml, activeVersion);
-				if (diffResult.getMaxLevel() == Level.INFO || diffResult.getMaxLevel() == Level.WARNING && useLiverebelIfCompatibleWithWarnings){
-					listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server );
-					commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId()).execute();
-					listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
-				}
-				else {
-					return cargoDeploy(warfile);
-				}
-				return false;
-			}
-		}
-	}
+  boolean deploy(LiveRebelXml lrXml, FilePath warfile, List<String> serverIds) {
+    listener.getLogger().printf("Deploying new application on the %s.\n", serverIds.toString());
+    commandCenter.deploy(lrXml.getApplicationId(), lrXml.getVersionId(), null, serverIds);
+    listener.getLogger().printf("SUCCESS: Application deployed to %s.\n", serverIds.toString());
+    return true;
+  }
 
-	boolean cargoDeploy(FilePath warfile) throws IOException, InterruptedException {
-		if (useCargoIfIncompatible) return deployPluginProxy.cargoDeploy(warfile);
-		listener.getLogger().println("Fallback to cargo deploy is disabled. Doing nothing.");
-		return false;
-	}
+  boolean activate(LiveRebelXml lrXml, String server, String activeVersion, FilePath warfile) throws IOException,
+      InterruptedException {
+    listener.getLogger().printf("Server: %s, active version on server: %s.\n", server, activeVersion);
 
-	DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
-		DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
-		diffResult.print(listener.getLogger());
-		listener.getLogger().println();
-		return diffResult;
-	}
+    if (activeVersion.equals(lrXml.getVersionId())) {
+      listener.getLogger().println("Current version is already running on server. No need to update.");
+      return true;
+    }
+    else {
+      DiffResult diffResult = getDifferences(lrXml, activeVersion);
+      listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server);
+      ConfigurableUpdate update = commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId());
+      if (diffResult.getMaxLevel() == Level.ERROR || diffResult.getMaxLevel() == Level.WARNING && useOfflineUpdateIfCompatibleWithWarnings) {
+        update.enableOffline();
+      }
+      update.execute();
+      listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
+      return true;
+    }
+  }
 
-	void uploadIfNeeded(ApplicationInfo applicationInfo, String currentVersion, FilePath warFile) throws IOException, InterruptedException {
-		if (applicationInfo == null) return;
-		if (applicationInfo.getVersions().contains(currentVersion)){
-			listener.getLogger().println("Current version of application is already uploaded. Skipping upload.");
-		}
-		else{
-			uploadArtifact(new File(warFile.getRemote()));
-		}
-	}
+  DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
+    DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
+    diffResult.print(listener.getLogger());
+    listener.getLogger().println();
+    return diffResult;
+  }
 
-	boolean uploadArtifact(File artifact) throws IOException, InterruptedException {
-		try {
-			UploadInfo upload = commandCenter.upload(artifact);
-			listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());
-			return true;
-		}
-		catch ( DuplicationException e ){
-			listener.getLogger().println(e.getMessage());
-			return false;
-		}
-	}
+  void uploadIfNeeded(ApplicationInfo applicationInfo, String currentVersion, FilePath warFile) throws IOException,
+      InterruptedException {
+    if (applicationInfo != null && applicationInfo.getVersions().contains(currentVersion)) {
+      listener.getLogger().println("Current version of application is already uploaded. Skipping upload.");
+    }
+    else {
+      uploadArtifact(new File(warFile.getRemote()));
+    }
+  }
 
-	LiveRebelXml getLiveRebelXml(FilePath warFile) throws IOException, InterruptedException {
-		LiveRebelXml lrXml = LiveApplicationUtil.findLiveRebelXml(new File(warFile.getRemote()));
-		listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(), lrXml.getVersionId());
-		return lrXml;
-	}
+  boolean uploadArtifact(File artifact) throws IOException, InterruptedException {
+    try {
+      UploadInfo upload = commandCenter.upload(artifact);
+      listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());
+      return true;
+    }
+    catch (DuplicationException e) {
+      listener.getLogger().println(e.getMessage());
+      return false;
+    }
+  }
 
+  LiveRebelXml getLiveRebelXml(FilePath warFile) throws IOException, InterruptedException {
+    LiveRebelXml lrXml = LiveApplicationUtil.findLiveRebelXml(new File(warFile.getRemote()));
+    listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(),
+        lrXml.getVersionId());
+    return lrXml;
+  }
 }

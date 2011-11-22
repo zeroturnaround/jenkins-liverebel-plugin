@@ -1,37 +1,22 @@
+
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 	<!-- This jelly script is used for per-project configuration.
 		See global.jelly for a general discussion about jelly script.
 	-->
 
-	<f:entry title="Artifacts to upload" field="artifacts">
-		<f:textbox />
-	</f:entry>
+    <f:entry title="Artifacts" field="artifacts">
+        <f:textbox />
+    </f:entry>
 
-	<f:entry field="useLiverebelIfCompatibleWithWarnings">
-		<f:checkbox name="useLiverebelIfCompatibleWithWarnings" checked="${instance.useLiverebelIfCompatibleWithWarnings}"/>
-		<label class="attach-previous">${%Deploy 'Compatible with Warnings' with LiveRebel}</label>
-	</f:entry>
+    <f:entry field="useOfflineUpdateIfCompatibleWithWarnings">
+        <f:checkbox name="useOfflineUpdateIfCompatibleWithWarnings" checked="${instance.useOfflineUpdateIfCompatibleWithWarnings}"/>
+        <label class="attach-previous">Fallback to
+            <b>offline updates</b> when
+            <b>Compatible with Warnings</b>
+        </label>
+    </f:entry>
 
-	<f:nested>
-		<table>
-			<f:optionalBlock inline="true" title="Fallback to regular deploy if LiveRebel does not support the change." checked="${instance.useCargo()}">
-				<f:dropdownList name="adapter" title="${%Container}">
-					<j:forEach var="d" items="${descriptor.containerAdapters}" varStatus="loop">
-						<f:dropdownListBlock value="${d.clazz.name}" title="${d.displayName}" selected="${instance.adapter.descriptor==d}">
-							<f:nested>
-								<table width="100%">
-									<tr><td><input type="hidden" name="stapler-class" value="${d.clazz.name}" /></td></tr>
-									<j:scope>
-										<j:set var="descriptor" value="${d}"/>
-										<j:set var="instance" value="${h.ifThenElse(instance.adapter.descriptor==descriptor, instance.adapter, null)}"/>
-										<st:include class="${descriptor.clazz}" page="config.jelly"/>
-									</j:scope>
-								</table>
-							</f:nested>
-						</f:dropdownListBlock>
-					</j:forEach>
-				</f:dropdownList>
-			</f:optionalBlock>
-		</table>
-	</f:nested>
+    <f:entry title="Servers">
+        <f:repeatableProperty field="servers" default="${descriptor.defaultServers}" noAddButton="true"/>
+    </f:entry>
 </j:jelly>

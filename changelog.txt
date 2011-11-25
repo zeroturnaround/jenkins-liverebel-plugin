@@ -2,6 +2,12 @@
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
 
+1.0-M2 (25th of November 2011)
+
+* Added initial deploy support
+* Added regular old deploy support
+* Added server selection support
+
 1.0-M1 (29th July 2011)
 
 * Initial binary release of the plugin   

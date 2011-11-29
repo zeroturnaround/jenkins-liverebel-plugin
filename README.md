@@ -6,7 +6,7 @@ LiveRebel Deploy Plugin for Jenkins/Hudson helps to run updates to your JEE cont
 Installation
 --------------
 
-The current version is a prototype version and does not yet have binary installation candidates.
+You can install the latest version from inside jenkins (Home -> Manage Jenkins -> Manage plugins).
 
 Installation for development
 ----------------------------------------

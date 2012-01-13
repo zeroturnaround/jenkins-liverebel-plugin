@@ -116,6 +116,10 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
   }
 
   public List<ServerCheckbox> getServers() {
+	if (servers == null) {
+      return getDescriptor().getDefaultServers();
+    }
+	
     CommandCenter commandCenter = getDescriptor().newCommandCenter();
     if (commandCenter != null) {
       Map<String, ServerInfo> lrServers = commandCenter.getServers();

@@ -234,8 +234,17 @@ public class LiveRebelProxy {
 
   LiveRebelXml getLiveRebelXml(FilePath warFile) throws IOException, InterruptedException {
     LiveRebelXml lrXml = LiveApplicationUtil.findLiveRebelXml(new File(warFile.getRemote()));
-    listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(),
-        lrXml.getVersionId());
-    return lrXml;
+    if(lrXml!=null) {
+      listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(), lrXml.getVersionId());
+      if(lrXml.getApplicationId()==null) {
+        throw new RuntimeException("application name is not set in liverebel.xml");
+      }
+      if(lrXml.getVersionId()==null) {
+        throw new RuntimeException("application version is not set in liverebel.xml");
+      }
+      return lrXml;
+    } else {
+      throw new RuntimeException("Didn't find liverebel.xml");
+    }
   }
 }

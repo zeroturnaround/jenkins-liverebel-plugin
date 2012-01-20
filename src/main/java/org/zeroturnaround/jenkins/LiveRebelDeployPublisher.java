@@ -57,17 +57,24 @@ import com.zeroturnaround.liverebel.api.ServerInfo;
  */
 public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
+  public enum Strategy {
+
+    OFFLINE,
+    ROLLING
+  }
   public final String artifacts;
-  public final boolean useOfflineUpdateIfCompatibleWithWarnings;
+  public final boolean useFallbackIfCompatibleWithWarnings;
+  public final Strategy strategy;
   private final List<ServerCheckbox> servers;
 
   // Fields in config.jelly must match the parameter names in the
   // "DataBoundConstructor"
   @DataBoundConstructor
-  public LiveRebelDeployPublisher(String artifacts, List<ServerCheckbox> servers, boolean useOfflineUpdateIfCompatibleWithWarnings) {
+  public LiveRebelDeployPublisher(String artifacts, List<ServerCheckbox> servers, String strategy, boolean useFallbackIfCompatibleWithWarnings) {
     this.artifacts = artifacts;
-    this.useOfflineUpdateIfCompatibleWithWarnings = useOfflineUpdateIfCompatibleWithWarnings;
+    this.strategy = Strategy.valueOf(strategy);
     this.servers = servers;
+    this.useFallbackIfCompatibleWithWarnings = useFallbackIfCompatibleWithWarnings;
   }
 
   @Override
@@ -89,7 +96,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
     CommandCenterFactory commandCenterFactory = new CommandCenterFactory().setUrl(getDescriptor().getLrUrl()).setVerbose(true).authenticate(getDescriptor().getAuthToken());
 
     if (!new LiveRebelProxy(commandCenterFactory, listener).perform(deployableFiles, getDeployableServers(),
-        useOfflineUpdateIfCompatibleWithWarnings))
+        strategy))
       build.setResult(Result.FAILURE);
     return true;
   }
@@ -104,7 +111,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
     return BuildStepMonitor.BUILD;
   }
 
-  public List<String> getDeployableServers() {
+  private List<String> getDeployableServers() {
     List<String> list = new ArrayList<String>();
     if (servers != null) {
       for (ServerCheckbox server : servers)
@@ -116,10 +123,10 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
   }
 
   public List<ServerCheckbox> getServers() {
-	if (servers == null) {
+    if (servers == null) {
       return getDescriptor().getDefaultServers();
     }
-	
+
     CommandCenter commandCenter = getDescriptor().newCommandCenter();
     if (commandCenter != null) {
       Map<String, ServerInfo> lrServers = commandCenter.getServers();

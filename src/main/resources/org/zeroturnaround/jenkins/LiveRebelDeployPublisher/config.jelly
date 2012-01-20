@@ -4,19 +4,27 @@
 		See global.jelly for a general discussion about jelly script.
 	-->
 
-    <f:entry title="Artifacts" field="artifacts">
-        <f:textbox />
-    </f:entry>
+  <f:entry title="Artifacts" field="artifacts">
+    <f:textbox />
+  </f:entry>
 
-    <f:entry field="useOfflineUpdateIfCompatibleWithWarnings">
-        <f:checkbox name="useOfflineUpdateIfCompatibleWithWarnings" checked="${instance.useOfflineUpdateIfCompatibleWithWarnings}"/>
-        <label class="attach-previous">Fallback to
-            <b>offline updates</b> when
-            <b>Compatible with Warnings</b>
-        </label>
-    </f:entry>
+  <f:entry field="useFallbackIfCompatibleWithWarnings">
+    <f:checkbox name="useFallbackIfCompatibleWithWarnings" checked="${instance.useFallbackIfCompatibleWithWarnings}"/>
+    <label class="attach-previous">
+      Use fallback strategy if 
+      <b>compatible with warnings</b>
+    </label>
+  </f:entry>
+  
+  <f:entry title="Fallback update strategy">
+    <f:radio name="strategy" value="OFFLINE" checked="${instance.strategy == null || instance.strategy.toString() == 'OFFLINE'}"/>
+    <label class="attach-previous">Offline update</label>
+    <br />
+    <f:radio name="strategy" value="ROLLING" checked="${instance.strategy.toString() == 'ROLLING'}"/>
+    <label class="attach-previous">Rolling restart</label>
+  </f:entry>
 
-    <f:entry title="Servers">
-        <f:repeatableProperty field="servers" default="${descriptor.defaultServers}" noAddButton="true"/>
-    </f:entry>
+  <f:entry title="Servers">
+    <f:repeatableProperty field="servers" default="${descriptor.defaultServers}" noAddButton="true"/>
+  </f:entry>
 </j:jelly>

@@ -38,6 +38,7 @@ import com.zeroturnaround.liverebel.api.diff.Level;
 import com.zeroturnaround.liverebel.api.update.ConfigurableUpdate;
 import com.zeroturnaround.liverebel.util.LiveApplicationUtil;
 import com.zeroturnaround.liverebel.util.LiveRebelXml;
+import org.zeroturnaround.jenkins.LiveRebelDeployPublisher.Strategy;
 
 /**
  * @author Juri Timoshin
@@ -47,21 +48,21 @@ public class LiveRebelProxy {
   private final CommandCenterFactory commandCenterFactory;
   private final BuildListener listener;
   CommandCenter commandCenter;
-  private boolean useOfflineUpdateIfCompatibleWithWarnings;
+  private Strategy strategy;
 
   public LiveRebelProxy(CommandCenterFactory centerFactory, BuildListener listener) {
     commandCenterFactory = centerFactory;
     this.listener = listener;
   }
 
-  public boolean perform(FilePath[] wars, List<String> deployableServers, boolean useOfflineUpdateIfCompatibleWithWarnings) throws IOException, InterruptedException {
+  public boolean perform(FilePath[] wars, List<String> deployableServers, Strategy strategy) throws IOException, InterruptedException {
     if (wars.length == 0) {
       listener.getLogger().println("Could not find any artifact to deploy. Please, specify it in job configuration.");
       return false;
     }
 
-    this.useOfflineUpdateIfCompatibleWithWarnings = useOfflineUpdateIfCompatibleWithWarnings;
-
+    this.strategy = strategy;
+    
     if (!initCommandCenter()) {
       return false;
     }
@@ -194,7 +195,7 @@ public class LiveRebelProxy {
       DiffResult diffResult = getDifferences(lrXml, activeVersion);
       listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server);
       ConfigurableUpdate update = commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId());
-      if (diffResult.getMaxLevel() == Level.ERROR || diffResult.getMaxLevel() == Level.WARNING && useOfflineUpdateIfCompatibleWithWarnings) {
+      if (diffResult.getMaxLevel() == Level.ERROR || diffResult.getMaxLevel() == Level.WARNING) {
         update.enableOffline();
       }
       update.execute();

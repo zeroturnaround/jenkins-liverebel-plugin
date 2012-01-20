@@ -33,6 +33,10 @@
       <id>DracoAter</id>
       <name>Juri Timošin</name>
     </developer>
+    <developer>
+      <id>mirkozt</id>
+      <name>Mirko Adari</name>
+    </developer>
   </developers>
 
   <build>
@@ -128,26 +132,21 @@
   </build>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/liverebel-deploy-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/liverebel-deploy-plugin.git</developerConnection>
-    <url>http://github.com/jenkinsci/liverebel-deploy-plugin</url>
+    <connection>scm:git:git://github.com/toomasr/liverebel-deploy-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:toomasr/liverebel-deploy-plugin.git</developerConnection>
+    <url>http://github.com/toomasr/liverebel-deploy-plugin</url>
   </scm>
 
   <dependencies>
     <dependency>
       <groupId>com.zeroturnaround</groupId>
       <artifactId>lr-api</artifactId>
-      <version>1.2-M3-SNAPSHOT</version>
+      <version>1.2-M5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.zeroturnaround</groupId>
       <artifactId>lr-util</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>deploy</artifactId>
-      <version>1.7</version>
+      <version>1.5</version>
     </dependency>
     <dependency>
 			<!-- for JRE requirement check annotation -->
@@ -170,12 +169,6 @@
       <version>0.999.10</version>
       <scope>test</scope>
     </dependency>
-		<!--dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.8.2</version>
-			<scope>test</scope>
-		</dependency-->
   </dependencies>
 
 	<!-- get every artifact through maven.glassfish.org, which proxies all the artifacts that we need -->

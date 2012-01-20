@@ -50,20 +50,22 @@ public class LiveRebelProxy {
   private final BuildListener listener;
   CommandCenter commandCenter;
   private Strategy strategy;
+  private boolean useFallbackIfCompatibleWithWarnings;
 
   public LiveRebelProxy(CommandCenterFactory centerFactory, BuildListener listener) {
     commandCenterFactory = centerFactory;
     this.listener = listener;
   }
 
-  public boolean perform(FilePath[] wars, List<String> deployableServers, Strategy strategy) throws IOException, InterruptedException {
+  public boolean perform(FilePath[] wars, List<String> deployableServers, Strategy strategy, boolean useFallbackIfCompatibleWithWarnings) throws IOException, InterruptedException {
     if (wars.length == 0) {
       listener.getLogger().println("Could not find any artifact to deploy. Please, specify it in job configuration.");
       return false;
     }
 
     this.strategy = strategy;
-    
+    this.useFallbackIfCompatibleWithWarnings = useFallbackIfCompatibleWithWarnings;
+
     if (!initCommandCenter()) {
       return false;
     }
@@ -77,7 +79,7 @@ public class LiveRebelProxy {
         ApplicationInfo applicationInfo = commandCenter.getApplication(lrXml.getApplicationId());
         uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
         result = result && update(lrXml, applicationInfo, warFile, deployableServers);
-        if(result) {
+        if (result) {
           listener.getLogger().printf(ARTIFACT_DEPLOYED_AND_UPDATED, warFile);
         }
       }
@@ -152,7 +154,7 @@ public class LiveRebelProxy {
     return applicationInfo == null;
   }
 
-  boolean update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warfile,  List<String> deployableServers) throws IOException,
+  boolean update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warfile, List<String> deployableServers) throws IOException,
       InterruptedException {
     if (deployableServers.isEmpty()) {
       listener.getLogger().println("No servers specified in LiveRebel configuration.");
@@ -199,8 +201,11 @@ public class LiveRebelProxy {
       DiffResult diffResult = getDifferences(lrXml, activeVersion);
       listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server);
       ConfigurableUpdate update = commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId());
-      if (diffResult.getMaxLevel() == Level.ERROR || diffResult.getMaxLevel() == Level.WARNING) {
-        update.enableOffline();
+      if (diffResult.getMaxLevel() == Level.ERROR || diffResult.getMaxLevel() == Level.WARNING && useFallbackIfCompatibleWithWarnings) {
+        if (strategy == Strategy.OFFLINE)
+          update.enableOffline();
+        else if (strategy == Strategy.ROLLING)
+          update.enableRolling();
       }
       update.execute();
       listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
@@ -240,16 +245,17 @@ public class LiveRebelProxy {
 
   LiveRebelXml getLiveRebelXml(FilePath warFile) throws IOException, InterruptedException {
     LiveRebelXml lrXml = LiveApplicationUtil.findLiveRebelXml(new File(warFile.getRemote()));
-    if(lrXml!=null) {
+    if (lrXml != null) {
       listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(), lrXml.getVersionId());
-      if(lrXml.getApplicationId()==null) {
+      if (lrXml.getApplicationId() == null) {
         throw new RuntimeException("application name is not set in liverebel.xml");
       }
-      if(lrXml.getVersionId()==null) {
+      if (lrXml.getVersionId() == null) {
         throw new RuntimeException("application version is not set in liverebel.xml");
       }
       return lrXml;
-    } else {
+    }
+    else {
       throw new RuntimeException("Didn't find liverebel.xml");
     }
   }

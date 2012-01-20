@@ -37,6 +37,7 @@ import com.zeroturnaround.liverebel.api.*;
 import com.zeroturnaround.liverebel.api.diff.DiffResult;
 import com.zeroturnaround.liverebel.util.LiveApplicationUtil;
 import com.zeroturnaround.liverebel.util.LiveRebelXml;
+import org.zeroturnaround.jenkins.LiveRebelDeployPublisher.Strategy;
 
 /**
  * @author Juri Timoshin
@@ -78,14 +79,14 @@ public class LiveRebelProxyTest extends TestCase {
   }
 
   public void testPerformNoWars() throws Exception {
-    assertFalse(lrProxy.perform(new FilePath[]{}, serverIds, false));
+    assertFalse(lrProxy.perform(new FilePath[]{}, serverIds, Strategy.OFFLINE, false));
     verify(printStreamMock).println("Could not find any artifact to deploy. Please, specify it in job configuration.");
   }
 
   public void testPerformFailInitCommandCenter() throws Exception {
     LiveRebelProxy lrProxySpy = spy(lrProxy);
     doReturn(false).when(lrProxySpy).initCommandCenter();
-    assertFalse(lrProxySpy.perform(new FilePath[]{war}, serverIds, false));
+    assertFalse(lrProxySpy.perform(new FilePath[]{war}, serverIds, Strategy.OFFLINE, false));
   }
 
   public void testPerformSuccess() throws Exception {
@@ -98,7 +99,7 @@ public class LiveRebelProxyTest extends TestCase {
     doNothing().when(lrProxySpy).uploadIfNeeded(applicationInfoMock, "1.4", war);
     doReturn(true).when(lrProxySpy).update(lrXml, applicationInfoMock, war, serverIds);
 
-    lrProxySpy.perform(new FilePath[]{war}, serverIds, false);
+    lrProxySpy.perform(new FilePath[]{war}, serverIds, Strategy.OFFLINE, false);
 
     verify(printStreamMock).printf("Processing artifact: %s\n", war);
     verify(lrProxySpy).getLiveRebelXml(war);

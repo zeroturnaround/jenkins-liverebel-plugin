@@ -96,7 +96,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
     CommandCenterFactory commandCenterFactory = new CommandCenterFactory().setUrl(getDescriptor().getLrUrl()).setVerbose(true).authenticate(getDescriptor().getAuthToken());
 
     if (!new LiveRebelProxy(commandCenterFactory, listener).perform(deployableFiles, getDeployableServers(),
-        strategy))
+        strategy, useFallbackIfCompatibleWithWarnings))
       build.setResult(Result.FAILURE);
     return true;
   }

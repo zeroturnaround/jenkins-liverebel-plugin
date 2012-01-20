@@ -105,7 +105,7 @@ public class LiveRebelProxyTest extends TestCase {
     verify(commandCenterMock).getApplication(lrXml.getApplicationId());
     verify(lrProxySpy).uploadIfNeeded(applicationInfoMock, "1.4", war);
     verify(lrProxySpy).update(lrXml, applicationInfoMock, war, serverIds);
-    verify(printStreamMock).printf("SUCCESS. Artifact deployed: %s\n", war);
+    verify(printStreamMock).printf(LiveRebelProxy.ARTIFACT_DEPLOYED_AND_UPDATED, war);
   }
 
   public void testInitCommandCenterSuccess() throws Exception {

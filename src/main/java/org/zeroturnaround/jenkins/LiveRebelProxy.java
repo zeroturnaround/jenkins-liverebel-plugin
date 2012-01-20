@@ -45,6 +45,7 @@ import org.zeroturnaround.jenkins.LiveRebelDeployPublisher.Strategy;
  */
 public class LiveRebelProxy {
 
+  public static final String ARTIFACT_DEPLOYED_AND_UPDATED = "SUCCESS. Artifact deployed and activated in all deployableServers servers: %s\n";
   private final CommandCenterFactory commandCenterFactory;
   private final BuildListener listener;
   CommandCenter commandCenter;
@@ -76,10 +77,13 @@ public class LiveRebelProxy {
         ApplicationInfo applicationInfo = commandCenter.getApplication(lrXml.getApplicationId());
         uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
         result = result && update(lrXml, applicationInfo, warFile, deployableServers);
-        listener.getLogger().printf("SUCCESS. Artifact deployed: %s\n", warFile);
+        if(result) {
+          listener.getLogger().printf(ARTIFACT_DEPLOYED_AND_UPDATED, warFile);
+        }
       }
       catch (IllegalArgumentException e) {
-        listener.getLogger().println("ERROR! " + e.getMessage());
+        listener.getLogger().println("ERROR!");
+        e.printStackTrace(listener.getLogger());
         result = false;
       }
       catch (Error e) {
@@ -218,6 +222,7 @@ public class LiveRebelProxy {
     }
     else {
       uploadArtifact(new File(warFile.getRemote()));
+      listener.getLogger().printf("Artifact uploaded: %s\n", warFile);
     }
   }
 
@@ -235,8 +240,17 @@ public class LiveRebelProxy {
 
   LiveRebelXml getLiveRebelXml(FilePath warFile) throws IOException, InterruptedException {
     LiveRebelXml lrXml = LiveApplicationUtil.findLiveRebelXml(new File(warFile.getRemote()));
-    listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(),
-        lrXml.getVersionId());
-    return lrXml;
+    if(lrXml!=null) {
+      listener.getLogger().printf("Found LiveRebel xml. Current application is: %s %s.\n", lrXml.getApplicationId(), lrXml.getVersionId());
+      if(lrXml.getApplicationId()==null) {
+        throw new RuntimeException("application name is not set in liverebel.xml");
+      }
+      if(lrXml.getVersionId()==null) {
+        throw new RuntimeException("application version is not set in liverebel.xml");
+      }
+      return lrXml;
+    } else {
+      throw new RuntimeException("Didn't find liverebel.xml");
+    }
   }
 }

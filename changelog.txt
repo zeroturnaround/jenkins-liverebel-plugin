@@ -1,6 +1,8 @@
 ********************************************
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
+1.0-M3 (23th of January 2012)
+* Added support for rolling restarts strategy
 
 1.0-M2 (25th of November 2011)
 

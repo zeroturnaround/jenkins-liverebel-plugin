@@ -19,7 +19,6 @@ import hudson.FilePath;
 import hudson.model.BuildListener;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipException;
@@ -38,6 +37,8 @@ import com.zeroturnaround.liverebel.api.diff.Level;
 import com.zeroturnaround.liverebel.api.update.ConfigurableUpdate;
 import com.zeroturnaround.liverebel.util.LiveApplicationUtil;
 import com.zeroturnaround.liverebel.util.LiveRebelXml;
+import java.util.HashSet;
+import java.util.Set;
 import org.zeroturnaround.jenkins.LiveRebelDeployPublisher.Strategy;
 
 /**
@@ -45,10 +46,10 @@ import org.zeroturnaround.jenkins.LiveRebelDeployPublisher.Strategy;
  */
 public class LiveRebelProxy {
 
-  public static final String ARTIFACT_DEPLOYED_AND_UPDATED = "SUCCESS. Artifact deployed and activated in all deployableServers servers: %s\n";
+  public static final String ARTIFACT_DEPLOYED_AND_UPDATED = "SUCCESS. Artifact deployed and activated in all %s servers: %s\n";
   private final CommandCenterFactory commandCenterFactory;
   private final BuildListener listener;
-  CommandCenter commandCenter;
+  private CommandCenter commandCenter;
   private Strategy strategy;
   private boolean useFallbackIfCompatibleWithWarnings;
 
@@ -63,30 +64,33 @@ public class LiveRebelProxy {
       return false;
     }
 
+    if (deployableServers.isEmpty()) {
+      listener.getLogger().println("No servers specified in LiveRebel configuration.");
+      return false;
+    }
+
     this.strategy = strategy;
     this.useFallbackIfCompatibleWithWarnings = useFallbackIfCompatibleWithWarnings;
 
     if (!initCommandCenter()) {
       return false;
     }
-    boolean result = true;
 
     listener.getLogger().println("Deploying artifacts.");
     for (FilePath warFile : wars) {
+      boolean result = false;
       try {
         listener.getLogger().printf("Processing artifact: %s\n", warFile);
         LiveRebelXml lrXml = getLiveRebelXml(warFile);
-        ApplicationInfo applicationInfo = commandCenter.getApplication(lrXml.getApplicationId());
+        ApplicationInfo applicationInfo = getCommandCenter().getApplication(lrXml.getApplicationId());
         uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
-        result = result && update(lrXml, applicationInfo, warFile, deployableServers);
-        if (result) {
-          listener.getLogger().printf(ARTIFACT_DEPLOYED_AND_UPDATED, warFile);
-        }
+        update(lrXml, applicationInfo, warFile, deployableServers);
+        listener.getLogger().printf(ARTIFACT_DEPLOYED_AND_UPDATED, deployableServers, warFile);
+        result = true;
       }
       catch (IllegalArgumentException e) {
         listener.getLogger().println("ERROR!");
         e.printStackTrace(listener.getLogger());
-        result = false;
       }
       catch (Error e) {
         listener.getLogger().println("ERROR! Unexpected error received from server.");
@@ -94,14 +98,12 @@ public class LiveRebelProxy {
         listener.getLogger().println("URL: " + e.getURL());
         listener.getLogger().println("Status code: " + e.getStatus());
         listener.getLogger().println("Message: " + e.getMessage());
-        result = false;
       }
       catch (ParseException e) {
         listener.getLogger().println("ERROR! Unable to read server response.");
         listener.getLogger().println();
         listener.getLogger().println("Response: " + e.getResponse());
         listener.getLogger().println("Reason: " + e.getMessage());
-        result = false;
       }
       catch (RuntimeException e) {
         if (e.getCause() instanceof ZipException) {
@@ -114,21 +116,21 @@ public class LiveRebelProxy {
           listener.getLogger().println();
           e.printStackTrace(listener.getLogger());
         }
-        result = false;
       }
       catch (Throwable t) {
         listener.getLogger().println("ERROR! Unexpected error occured:");
         listener.getLogger().println();
         t.printStackTrace(listener.getLogger());
-        result = false;
       }
+      if (!result)
+        return result;
     }
-    return result;
+    return true;
   }
 
   boolean initCommandCenter() {
     try {
-      commandCenter = commandCenterFactory.newCommandCenter();
+      this.commandCenter = commandCenterFactory.newCommandCenter();
       return true;
     }
     catch (Forbidden e) {
@@ -154,67 +156,46 @@ public class LiveRebelProxy {
     return applicationInfo == null;
   }
 
-  boolean update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warfile, List<String> deployableServers) throws IOException,
+  void update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warFile, List<String> selectedServers) throws IOException,
       InterruptedException {
-    if (deployableServers.isEmpty()) {
-      listener.getLogger().println("No servers specified in LiveRebel configuration.");
-      return false;
-    }
     listener.getLogger().println("Starting updating application on servers:");
-    boolean result = true;
-    if (isFirstRelease(applicationInfo)) {
-      result = deploy(lrXml, warfile, deployableServers);
-    }
-    else {
-      List<String> diff = new ArrayList<String>(deployableServers);
-      diff.removeAll(applicationInfo.getActiveVersionPerServer().keySet());
-      for (Map.Entry<String, String> versionWithServer : applicationInfo.getActiveVersionPerServer().entrySet()) {
-        if (diff.contains(versionWithServer.getKey())) {
-          continue;
-        }
-        result = result && activate(lrXml, versionWithServer.getKey(), versionWithServer.getValue(), warfile);
-      }
-      if (!diff.isEmpty()) {
-        deploy(lrXml, warfile, diff);
-      }
+
+    Set<String> deployServers = getDeployServers(applicationInfo, selectedServers);
+    if (!deployServers.isEmpty()) {
+      deploy(lrXml, warFile, deployServers);
     }
 
-    return result;
+    if (deployServers.size() != selectedServers.size()) {
+      Set<String> activateServers = new HashSet<String>(selectedServers);
+      activateServers.removeAll(deployServers);
+
+      Level diffLevel = getMaxDifferenceLevel(applicationInfo, lrXml, activateServers);
+
+      activate(lrXml, warFile, activateServers, diffLevel);
+    }
   }
 
-  boolean deploy(LiveRebelXml lrXml, FilePath warfile, List<String> serverIds) {
-    listener.getLogger().printf("Deploying new application on the %s.\n", serverIds.toString());
-    commandCenter.deploy(lrXml.getApplicationId(), lrXml.getVersionId(), null, serverIds);
-    listener.getLogger().printf("SUCCESS: Application deployed to %s.\n", serverIds.toString());
-    return true;
+  void deploy(LiveRebelXml lrXml, FilePath warfile, Set<String> serverIds) {
+    listener.getLogger().printf("Deploying new application on %s.\n", serverIds);
+    getCommandCenter().deploy(lrXml.getApplicationId(), lrXml.getVersionId(), null, serverIds);
+    listener.getLogger().printf("SUCCESS: Application deployed to %s.\n", serverIds);
   }
 
-  boolean activate(LiveRebelXml lrXml, String server, String activeVersion, FilePath warfile) throws IOException,
+  void activate(LiveRebelXml lrXml, FilePath warfile, Set<String> serverIds, Level diffLevel) throws IOException,
       InterruptedException {
-    listener.getLogger().printf("Server: %s, active version on server: %s.\n", server, activeVersion);
-
-    if (activeVersion.equals(lrXml.getVersionId())) {
-      listener.getLogger().println("Current version is already running on server. No need to update.");
-      return true;
+    ConfigurableUpdate update = getCommandCenter().update(lrXml.getApplicationId(), lrXml.getVersionId());
+    if (diffLevel == Level.ERROR || diffLevel == Level.WARNING && useFallbackIfCompatibleWithWarnings) {
+      if (strategy == Strategy.OFFLINE)
+        update.enableOffline();
+      else if (strategy == Strategy.ROLLING)
+        update.enableRolling();
     }
-    else {
-      DiffResult diffResult = getDifferences(lrXml, activeVersion);
-      listener.getLogger().printf("Activating version %s on %s server.\n", lrXml.getVersionId(), server);
-      ConfigurableUpdate update = commandCenter.update(lrXml.getApplicationId(), lrXml.getVersionId());
-      if (diffResult.getMaxLevel() == Level.ERROR || diffResult.getMaxLevel() == Level.WARNING && useFallbackIfCompatibleWithWarnings) {
-        if (strategy == Strategy.OFFLINE)
-          update.enableOffline();
-        else if (strategy == Strategy.ROLLING)
-          update.enableRolling();
-      }
-      update.execute();
-      listener.getLogger().printf("SUCCESS: Version %s activated on %s server.\n", lrXml.getVersionId(), server);
-      return true;
-    }
+    update.on(serverIds);
+    update.execute();
   }
 
   DiffResult getDifferences(LiveRebelXml lrXml, String activeVersion) {
-    DiffResult diffResult = commandCenter.compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
+    DiffResult diffResult = getCommandCenter().compare(lrXml.getApplicationId(), activeVersion, lrXml.getVersionId(), false);
     diffResult.print(listener.getLogger());
     listener.getLogger().println();
     return diffResult;
@@ -233,7 +214,7 @@ public class LiveRebelProxy {
 
   boolean uploadArtifact(File artifact) throws IOException, InterruptedException {
     try {
-      UploadInfo upload = commandCenter.upload(artifact);
+      UploadInfo upload = getCommandCenter().upload(artifact);
       listener.getLogger().printf("SUCCESS: %s %s was uploaded.\n", upload.getApplicationId(), upload.getVersionId());
       return true;
     }
@@ -258,5 +239,47 @@ public class LiveRebelProxy {
     else {
       throw new RuntimeException("Didn't find liverebel.xml");
     }
+  }
+
+  Set<String> getDeployServers(ApplicationInfo applicationInfo, List<String> selectedServers) {
+    Set<String> deployServers = new HashSet<String>();
+
+    if (isFirstRelease(applicationInfo)) {
+      deployServers.addAll(selectedServers);
+      return deployServers;
+    }
+
+    Map<String, String> activeVersions = applicationInfo.getActiveVersionPerServer();
+
+    for (String server : selectedServers) {
+      if (!activeVersions.containsKey(server))
+        deployServers.add(server);
+    }
+    return deployServers;
+  }
+
+  private Level getMaxDifferenceLevel(ApplicationInfo applicationInfo, LiveRebelXml lrXml, Set<String> activateServers) {
+    Map<String, String> activeVersions = applicationInfo.getActiveVersionPerServer();
+    activeVersions.keySet().retainAll(activateServers);
+
+    Set<String> diffVersions = new HashSet<String>(activeVersions.values());
+    Level diffLevel = Level.NOP;
+
+    for (String version : diffVersions) {
+      DiffResult differences = getDifferences(lrXml, version);
+      if (differences.getMaxLevel().compareTo(diffLevel) > 0) {
+        diffLevel = differences.getMaxLevel();
+      }
+      if (diffLevel.compareTo(Level.ERROR) == 0)
+        break;
+    }
+    return diffLevel;
+  }
+
+  /**
+   * @return the commandCenter
+   */
+  public CommandCenter getCommandCenter() {
+    return commandCenter;
   }
 }

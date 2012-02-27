@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.zip.ZipException;
 
 import com.zeroturnaround.liverebel.api.ApplicationInfo;
@@ -39,6 +40,8 @@ import com.zeroturnaround.liverebel.util.LiveApplicationUtil;
 import com.zeroturnaround.liverebel.util.LiveRebelXml;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
 import org.zeroturnaround.jenkins.LiveRebelDeployPublisher.Strategy;
 
 /**
@@ -258,20 +261,39 @@ public class LiveRebelProxy {
     return deployServers;
   }
 
-  private Level getMaxDifferenceLevel(ApplicationInfo applicationInfo, LiveRebelXml lrXml, Set<String> activateServers) {
+  private Level getMaxDifferenceLevel(ApplicationInfo applicationInfo, LiveRebelXml lrXml, Set<String> serversToUpdate) {
     Map<String, String> activeVersions = applicationInfo.getActiveVersionPerServer();
-    activeVersions.keySet().retainAll(activateServers);
-
-    Set<String> diffVersions = new HashSet<String>(activeVersions.values());
     Level diffLevel = Level.NOP;
-
-    for (String version : diffVersions) {
-      DiffResult differences = getDifferences(lrXml, version);
-      if (differences.getMaxLevel().compareTo(diffLevel) > 0) {
-        diffLevel = differences.getMaxLevel();
+    String versionToUpdateTo = lrXml.getVersionId();
+    int serversWithSameVersion = 0;
+    for (Entry<String, String> entry : activeVersions.entrySet()) {
+      String server = entry.getKey();
+      if (!serversToUpdate.contains(server)) {
+        continue;
       }
-      if (diffLevel.compareTo(Level.ERROR) == 0)
-        break;
+      String versionInServer = entry.getValue();
+      if (StringUtils.equals(versionToUpdateTo, versionInServer)) {
+        serversWithSameVersion++;
+        serversToUpdate.remove(server);
+        listener.getLogger().println(
+            "Server " + server + " already contains active version " + lrXml.getVersionId() + " of application "
+                + lrXml.getApplicationId());
+      }
+      else {
+        DiffResult differences = getDifferences(lrXml, versionInServer);
+        Level maxLevel = differences.getMaxLevel();
+        if (maxLevel.compareTo(diffLevel) > 0) {
+          diffLevel = maxLevel;
+        }
+      }
+    }
+    if (serversWithSameVersion > 0) {
+      String msg = "Cancelling update - version " + lrXml.getVersionId() + " of application "
+          + lrXml.getApplicationId() + " is already deployed to " + serversWithSameVersion + " servers";
+      if (!serversToUpdate.isEmpty()) {
+        msg += " out of " + (serversToUpdate.size() + serversWithSameVersion) + " servers.";
+      }
+      throw new RuntimeException(msg);
     }
     return diffLevel;
   }

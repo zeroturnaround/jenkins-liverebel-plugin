@@ -37,6 +37,10 @@
       <id>mirkozt</id>
       <name>Mirko Adari</name>
     </developer>
+    <developer>
+      <id>atsuiboupin</id>
+      <name>Ats Uiboupin</name>
+    </developer>
   </developers>
 
   <build>
@@ -211,7 +215,8 @@
     <dependency>
       <groupId>com.zeroturnaround</groupId>
       <artifactId>lr-api</artifactId>
-      <version>1.2-M5</version>
+<!--       <version>1.2-M5</version> -->
+      <version>2.0</version>
     </dependency>
     <dependency>
       <groupId>com.zeroturnaround</groupId>

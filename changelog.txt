@@ -1,6 +1,14 @@
 ********************************************
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
+1.0 (27th of February 2012)
+* Added hotpatch support
+* Added deploy support
+* Added server selection support
+* Added fallback strategies
+* Added offline update strategy
+* Added rolling restarts strategy
+
 1.0-RC1 (6th of February 2012)
 * Bugfixes
 

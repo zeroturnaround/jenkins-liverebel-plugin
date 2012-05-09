@@ -206,9 +206,9 @@
   </build>
 
   <scm>
-    <connection>scm:git:git://github.com/toomasr/liverebel-deploy-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:toomasr/liverebel-deploy-plugin.git</developerConnection>
-    <url>http://github.com/toomasr/liverebel-deploy-plugin</url>
+    <connection>scm:git:git://github.com/zeroturnaround/jenkins-liverebel-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:zeroturnaround/jenkins-liverebel-plugin.git</developerConnection>
+    <url>http://github.com/zeroturnaround/jenkins-liverebel-plugin</url>
   </scm>
 
   <dependencies>

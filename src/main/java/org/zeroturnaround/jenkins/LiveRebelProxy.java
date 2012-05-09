@@ -1,20 +1,22 @@
 package org.zeroturnaround.jenkins;
 
-/*****************************************************************
-Copyright 2011 ZeroTurnaround OÜ
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- *****************************************************************/
+/**
+ * ***************************************************************
+ * Copyright 2011 ZeroTurnaround OÜ
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ ****************************************************************
+ */
 import hudson.FilePath;
 import hudson.model.BuildListener;
 import java.io.File;
@@ -61,7 +63,7 @@ public class LiveRebelProxy {
     this.listener = listener;
   }
 
-  public boolean perform(FilePath[] wars, List<String> deployableServers, Strategy strategy, boolean useFallbackIfCompatibleWithWarnings) throws IOException, InterruptedException {
+  public boolean perform(FilePath[] wars, String contextPath, List<String> deployableServers, Strategy strategy, boolean useFallbackIfCompatibleWithWarnings) throws IOException, InterruptedException {
     if (wars.length == 0) {
       listener.getLogger().println("Could not find any artifact to deploy. Please, specify it in job configuration.");
       return false;
@@ -87,7 +89,7 @@ public class LiveRebelProxy {
         LiveRebelXml lrXml = getLiveRebelXml(warFile);
         ApplicationInfo applicationInfo = getCommandCenter().getApplication(lrXml.getApplicationId());
         uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
-        update(lrXml, applicationInfo, warFile, deployableServers);
+        update(lrXml, applicationInfo, warFile, deployableServers, contextPath);
         listener.getLogger().printf(ARTIFACT_DEPLOYED_AND_UPDATED, deployableServers, warFile);
         result = true;
       }
@@ -159,13 +161,13 @@ public class LiveRebelProxy {
     return applicationInfo == null;
   }
 
-  void update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warFile, List<String> selectedServers) throws IOException,
+  void update(LiveRebelXml lrXml, ApplicationInfo applicationInfo, FilePath warFile, List<String> selectedServers, String contextPath) throws IOException,
       InterruptedException {
     listener.getLogger().println("Starting updating application on servers:");
 
     Set<String> deployServers = getDeployServers(applicationInfo, selectedServers);
     if (!deployServers.isEmpty()) {
-      deploy(lrXml, warFile, deployServers);
+      deploy(lrXml, warFile, deployServers, contextPath);
     }
 
     if (deployServers.size() != selectedServers.size()) {
@@ -178,9 +180,11 @@ public class LiveRebelProxy {
     }
   }
 
-  void deploy(LiveRebelXml lrXml, FilePath warfile, Set<String> serverIds) {
+  void deploy(LiveRebelXml lrXml, FilePath warfile, Set<String> serverIds, String contextPath) {
     listener.getLogger().printf("Deploying new application on %s.\n", serverIds);
-    getCommandCenter().deploy(lrXml.getApplicationId(), lrXml.getVersionId(), null, serverIds);
+    if (contextPath == null || contextPath.equals(""))
+      contextPath = null;
+    getCommandCenter().deploy(lrXml.getApplicationId(), lrXml.getVersionId(), contextPath, serverIds);
     listener.getLogger().printf("SUCCESS: Application deployed to %s.\n", serverIds);
   }
 
@@ -277,7 +281,7 @@ public class LiveRebelProxy {
         serversToUpdate.remove(server);
         listener.getLogger().println(
             "Server " + server + " already contains active version " + lrXml.getVersionId() + " of application "
-                + lrXml.getApplicationId());
+            + lrXml.getApplicationId());
       }
       else {
         DiffResult differences = getDifferences(lrXml, versionInServer);

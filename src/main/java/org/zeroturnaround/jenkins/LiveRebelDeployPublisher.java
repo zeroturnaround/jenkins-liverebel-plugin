@@ -65,12 +65,14 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
   public final String artifacts;
   public final boolean useFallbackIfCompatibleWithWarnings;
   public final Strategy strategy;
+  public final String contextPath;
   private final List<ServerCheckbox> servers;
 
   // Fields in config.jelly must match the parameter names in the
   // "DataBoundConstructor"
   @DataBoundConstructor
-  public LiveRebelDeployPublisher(String artifacts, List<ServerCheckbox> servers, String strategy, boolean useFallbackIfCompatibleWithWarnings) {
+  public LiveRebelDeployPublisher(String artifacts, String contextPath, List<ServerCheckbox> servers, String strategy, boolean useFallbackIfCompatibleWithWarnings) {
+    this.contextPath = contextPath;
     this.artifacts = artifacts;
     this.strategy = Strategy.valueOf(strategy);
     this.servers = servers;
@@ -95,7 +97,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
 
     CommandCenterFactory commandCenterFactory = new CommandCenterFactory().setUrl(getDescriptor().getLrUrl()).setVerbose(true).authenticate(getDescriptor().getAuthToken());
 
-    if (!new LiveRebelProxy(commandCenterFactory, listener).perform(deployableFiles, getDeployableServers(),
+    if (!new LiveRebelProxy(commandCenterFactory, listener).perform(deployableFiles, contextPath, getDeployableServers(),
         strategy, useFallbackIfCompatibleWithWarnings))
       build.setResult(Result.FAILURE);
     return true;

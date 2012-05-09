@@ -7,6 +7,10 @@
   <f:entry title="Artifacts" field="artifacts">
     <f:textbox />
   </f:entry>
+  
+  <f:entry title="Context path" field="contextPath">
+    <f:textbox />
+  </f:entry>
 
   <f:entry field="useFallbackIfCompatibleWithWarnings">
     <f:checkbox name="useFallbackIfCompatibleWithWarnings" checked="${instance.useFallbackIfCompatibleWithWarnings}"/>

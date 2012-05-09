@@ -1,4 +1,4 @@
-LiveRebel Deploy Plugin for Hudson
+LiveRebel Deploy Plugin for Jenkins
 ==================================
 
 LiveRebel Deploy Plugin for Jenkins/Hudson helps to run updates to your JEE containers faster. LiveRebel is tool for hot updates without downtime, lost sessions and OutOfMemoryErrors. This plugin will take a WAR/EAR file and find out if LiveRebel supports the update and if it does it will use LiveRebel to run the update. If not then the Deploy Plugin is used instead. The plugin requires a LiveRebel Command Center running and security token to interact with it.

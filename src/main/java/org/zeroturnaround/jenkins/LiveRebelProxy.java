@@ -63,7 +63,7 @@ public class LiveRebelProxy {
     this.listener = listener;
   }
 
-  public boolean perform(FilePath[] wars, String contextPath, List<String> deployableServers, Strategy strategy, boolean useFallbackIfCompatibleWithWarnings) throws IOException, InterruptedException {
+  public boolean perform(FilePath[] wars, String contextPath, List<String> deployableServers, Strategy strategy, boolean useFallbackIfCompatibleWithWarnings, boolean uploadOnly) throws IOException, InterruptedException {
     if (wars.length == 0) {
       listener.getLogger().println("Could not find any artifact to deploy. Please, specify it in job configuration.");
       return false;
@@ -89,8 +89,10 @@ public class LiveRebelProxy {
         LiveRebelXml lrXml = getLiveRebelXml(warFile);
         ApplicationInfo applicationInfo = getCommandCenter().getApplication(lrXml.getApplicationId());
         uploadIfNeeded(applicationInfo, lrXml.getVersionId(), warFile);
-        update(lrXml, applicationInfo, warFile, deployableServers, contextPath);
-        listener.getLogger().printf(ARTIFACT_DEPLOYED_AND_UPDATED, deployableServers, warFile);
+        if (!uploadOnly) {
+          update(lrXml, applicationInfo, warFile, deployableServers, contextPath);
+          listener.getLogger().printf(ARTIFACT_DEPLOYED_AND_UPDATED, deployableServers, warFile);
+        }
         result = true;
       }
       catch (IllegalArgumentException e) {

@@ -1,29 +1,35 @@
-
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-	<!-- This jelly script is used for per-project configuration.
-		See global.jelly for a general discussion about jelly script.
-	-->
+  <!-- This jelly script is used for per-project configuration.
+    See global.jelly for a general discussion about jelly script.
+  -->
 
   <f:entry title="Artifacts" field="artifacts">
-    <f:textbox />
+    <f:textbox/>
   </f:entry>
-  
+
+  <f:entry field="onlyUpload">
+    <f:checkbox name="onlyUpload" checked="${instance.onlyUpload}"/>
+    <label class="attach-previous">
+      Only upload artifacts to LiveRebel, no update or deployment will be triggered.
+    </label>
+  </f:entry>
+
   <f:entry title="Context path" field="contextPath">
-    <f:textbox />
+    <f:textbox/>
   </f:entry>
 
   <f:entry field="useFallbackIfCompatibleWithWarnings">
     <f:checkbox name="useFallbackIfCompatibleWithWarnings" checked="${instance.useFallbackIfCompatibleWithWarnings}"/>
     <label class="attach-previous">
-      Use fallback strategy if 
+      Use fallback strategy if
       <b>compatible with warnings</b>
     </label>
   </f:entry>
-  
+
   <f:entry title="Fallback update strategy">
     <f:radio name="strategy" value="OFFLINE" checked="${instance.strategy == null || instance.strategy.toString() == 'OFFLINE'}"/>
     <label class="attach-previous">Offline update</label>
-    <br />
+    <br/>
     <f:radio name="strategy" value="ROLLING" checked="${instance.strategy.toString() == 'ROLLING'}"/>
     <label class="attach-previous">Rolling restart</label>
   </f:entry>

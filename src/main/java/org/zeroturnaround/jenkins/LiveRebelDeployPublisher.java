@@ -64,6 +64,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
   }
   public final String artifacts;
   public final boolean useFallbackIfCompatibleWithWarnings;
+  public final boolean uploadOnly;
   public final Strategy strategy;
   public final String contextPath;
   private final List<ServerCheckbox> servers;
@@ -71,9 +72,10 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
   // Fields in config.jelly must match the parameter names in the
   // "DataBoundConstructor"
   @DataBoundConstructor
-  public LiveRebelDeployPublisher(String artifacts, String contextPath, List<ServerCheckbox> servers, String strategy, boolean useFallbackIfCompatibleWithWarnings) {
+  public LiveRebelDeployPublisher(String artifacts, String contextPath, List<ServerCheckbox> servers, String strategy, boolean useFallbackIfCompatibleWithWarnings, boolean uploadOnly) {
     this.contextPath = contextPath;
     this.artifacts = artifacts;
+    this.uploadOnly = uploadOnly;
     this.strategy = Strategy.valueOf(strategy);
     this.servers = servers;
     this.useFallbackIfCompatibleWithWarnings = useFallbackIfCompatibleWithWarnings;
@@ -98,7 +100,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
     CommandCenterFactory commandCenterFactory = new CommandCenterFactory().setUrl(getDescriptor().getLrUrl()).setVerbose(true).authenticate(getDescriptor().getAuthToken());
 
     if (!new LiveRebelProxy(commandCenterFactory, listener).perform(deployableFiles, contextPath, getDeployableServers(),
-        strategy, useFallbackIfCompatibleWithWarnings))
+        strategy, useFallbackIfCompatibleWithWarnings, uploadOnly))
       build.setResult(Result.FAILURE);
     return true;
   }

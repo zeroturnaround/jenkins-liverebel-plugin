@@ -6,3 +6,5 @@ target
 vis.py
 work
 .*swp
+.idea
+*.iml

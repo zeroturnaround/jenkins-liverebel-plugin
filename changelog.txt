@@ -1,7 +1,10 @@
 ********************************************
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
-1.01 (9th of May 2012)
+1.0.2 (21th of May 2012)
+* Added upload only option
+
+1.0.1 (9th of May 2012)
 * Added context path option
 
 1.0 (27th of February 2012)

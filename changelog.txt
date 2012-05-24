@@ -1,6 +1,9 @@
 ********************************************
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
+1.0.3 (24th of May 2012)
+* Fixed an issue with configuration persistance
+
 1.0.2 (21th of May 2012)
 * Added upload only option
 

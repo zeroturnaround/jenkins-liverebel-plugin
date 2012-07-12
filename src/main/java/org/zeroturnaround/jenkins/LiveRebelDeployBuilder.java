@@ -25,6 +25,7 @@ import hudson.model.Result;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Builder;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
@@ -55,7 +56,7 @@ import com.zeroturnaround.liverebel.api.ServerInfo;
 /**
  * @author Juri Timoshin
  */
-public class LiveRebelDeployPublisher extends Notifier implements Serializable {
+public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
   public enum Strategy {
 
@@ -72,7 +73,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
   // Fields in config.jelly must match the parameter names in the
   // "DataBoundConstructor"
   @DataBoundConstructor
-  public LiveRebelDeployPublisher(String artifacts, String contextPath, List<ServerCheckbox> servers, String strategy, boolean useFallbackIfCompatibleWithWarnings, boolean uploadOnly) {
+  public LiveRebelDeployBuilder(String artifacts, String contextPath, List<ServerCheckbox> servers, String strategy, boolean useFallbackIfCompatibleWithWarnings, boolean uploadOnly) {
     this.contextPath = contextPath;
     this.artifacts = artifacts;
     this.uploadOnly = uploadOnly;
@@ -150,7 +151,7 @@ public class LiveRebelDeployPublisher extends Notifier implements Serializable {
   }
 
   @Extension
-  public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+  public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
     private static final Logger LOGGER = Logger.getLogger(DescriptorImpl.class.getName());
 

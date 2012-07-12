@@ -35,6 +35,6 @@
   </f:entry>
 
   <f:entry title="Servers">
-    <f:repeatableProperty field="servers" default="${descriptor.defaultServers}" noAddButton="true"/>
+    <f:repeatableProperty field="servers" default="${descriptor.getDefaultServers()}" noAddButton="true"/>
   </f:entry>
 </j:jelly>

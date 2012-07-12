@@ -26,8 +26,6 @@ import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
-import hudson.tasks.Notifier;
-import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import java.io.IOException;
 import java.io.Serializable;
@@ -112,9 +110,9 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     return (DescriptorImpl) super.getDescriptor();
   }
 
-  public BuildStepMonitor getRequiredMonitorService() {
-    return BuildStepMonitor.BUILD;
-  }
+//  public BuildStepMonitor getRequiredMonitorService() {
+//    return BuildStepMonitor.BUILD;
+//  }
 
   private List<String> getDeployableServers() {
     List<String> list = new ArrayList<String>();

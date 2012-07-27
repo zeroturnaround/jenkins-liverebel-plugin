@@ -1,40 +1,68 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <!-- This jelly script is used for per-project configuration.
     See global.jelly for a general discussion about jelly script.
   -->
 
-  <f:entry title="Artifacts" field="artifacts">
+  <st:once>
+    <script type="text/javascript" src="${rootURL}/plugin/liverebel-deploy/js/checkboxes.js"/>
+    <style type="text/css">
+
+      .firstLevel {
+      padding-left:20px;
+      <!--display:none;-->
+      }
+      .secondLevel {
+      padding-left:40px;
+      <!--display:none;-->
+      }
+      .secondLevel input[type="text"] {
+      width:40px;
+      }
+      .thirdLevel {
+      padding-left:60px;
+      <!--display:none;-->
+      }
+    </style>
+  </st:once>
+
+
+  <f:entry title="Artifact" field="artifact">
     <f:textbox/>
   </f:entry>
 
-  <f:entry field="uploadOnly">
-    <f:checkbox name="uploadOnly" checked="${instance.uploadOnly}"/>
-    <label class="attach-previous">
-      Only upload artifacts to LiveRebel, no update or deployment will be triggered.
-    </label>
-  </f:entry>
+  <f:nested>
+    <table style="margin-left: -3px;width: 300px;">
+      <f:optionalBlock name="overrideForm" title="Override artifact liverebel.xml" checked="${instance.isOverride}">
 
-  <f:entry title="Context path" field="contextPath">
-    <f:textbox/>
-  </f:entry>
+        <f:entry title="Application Name" field="app">
+          <f:textbox name="app" value="${instance.app}"/>
+        </f:entry>
+        <f:entry title="Application Version" field="ver">
+          <f:textbox value="${instance.ver}"/>
+        </f:entry>
 
-  <f:entry field="useFallbackIfCompatibleWithWarnings">
-    <f:checkbox name="useFallbackIfCompatibleWithWarnings" checked="${instance.useFallbackIfCompatibleWithWarnings}"/>
-    <label class="attach-previous">
-      Use fallback strategy if
-      <b>compatible with warnings</b>
-    </label>
-  </f:entry>
+      </f:optionalBlock>
+    </table>
+  </f:nested>
 
-  <f:entry title="Fallback update strategy">
-    <f:radio name="strategy" value="OFFLINE" checked="${instance.strategy == null || instance.strategy.toString() == 'OFFLINE'}"/>
-    <label class="attach-previous">Offline update</label>
-    <br/>
-    <f:radio name="strategy" value="ROLLING" checked="${instance.strategy.toString() == 'ROLLING'}"/>
-    <label class="attach-previous">Rolling restart</label>
-  </f:entry>
+  <j:if test="${descriptor.isMetadataSupported()}">
+    <f:entry title="Metadata associated with this archive" field="metadata">
+      <f:textbox/>
+    </f:entry>
+  </j:if>
 
-  <f:entry title="Servers">
-    <f:repeatableProperty field="servers" default="${descriptor.getDefaultServers()}" noAddButton="true"/>
-  </f:entry>
+  <f:nested>
+    <table style="margin-left: -3px;width: 450px;">
+      <f:radioBlock name="deployOrDistributeWrapper" title="Distribute artifact to LiveRebel"
+                    checked="${instance.distribute}">
+      </f:radioBlock>
+      <f:radioBlock name="deployOrDistributeWrapper" title="Deploy or update artifact"
+                    checked="${instance.deployOrUpdate}">
+        <f:property field="deployOrDistribute"/>
+
+      </f:radioBlock>
+    </table>
+  </f:nested>
+
 </j:jelly>

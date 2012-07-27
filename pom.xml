@@ -41,6 +41,10 @@
       <id>atsuiboupin</id>
       <name>Ats Uiboupin</name>
     </developer>
+    <developer>
+      <id>poolik</id>
+      <name>Tõnis Pool</name>
+    </developer>
   </developers>
 
   <build>
@@ -213,14 +217,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.zeroturnaround</groupId>
-      <artifactId>lr-api</artifactId>
-      <version>2.0.8</version>
-    </dependency>
-    <dependency>
-      <groupId>com.zeroturnaround</groupId>
-      <artifactId>lr-util</artifactId>
-      <version>1.15</version>
+      <groupId>org.zeroturnaround</groupId>
+      <artifactId>liverebel-plugin-util</artifactId>
+      <version>1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -248,6 +247,16 @@
       <artifactId>jmockit</artifactId>
       <version>0.999.10</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.main</groupId>
+      <artifactId>jenkins-test-harness</artifactId>
+      <version>1.423</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>r09</version>
     </dependency>
   </dependencies>
 

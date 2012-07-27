@@ -1,15 +1,28 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:invisibleEntry>
+    <f:textbox name="server" value="${instance.server}"/>
+  </f:invisibleEntry>
 
-    <f:invisibleEntry>
-        <f:textbox name="server" value="${instance.server}"/>
-    </f:invisibleEntry>
+  <f:invisibleEntry>
+    <f:textbox name="title" value="${instance.title}"/>
+  </f:invisibleEntry>
 
-    <f:invisibleEntry>
-        <f:textbox name="title" value="${instance.title}"/>
-    </f:invisibleEntry>
+  <f:invisibleEntry>
+    <f:textbox name="isGroup" value="${instance.isGroup()}"/>
+  </f:invisibleEntry>
 
-    <f:entry>
-        <f:checkbox name="selected" checked="${instance.selected}" title="${instance.title} ${instance.isOnline() ? '(online)' : '(offline)'}"/>
-    </f:entry>
-
+  <f:entry field="" >
+    <div class="${instance.getIndentDepthAsCSSClass()} ${instance.getParentNames()}">
+      <j:if test="${instance.isGroup()}">
+        <f:checkbox name="selected" value="${instance.title}" default="${instance.isSelected()}" checked="${instance.isSelected()}"
+                    onclick="toggleDependentCheckboxes(this);" title="${instance.title}"/>
+      </j:if>
+      <j:if test="${!instance.isGroup()}">
+        <f:checkbox name="selected" value="${instance.title}" default="${instance.isSelected()}" checked="${instance.isSelected()}"
+                    onclick="toggleDependentCheckboxes(this);"
+                    title="${instance.title} ${instance.isOnline() ? '(online)' : '(offline)'}"/>
+      </j:if>
+    </div>
+  </f:entry>
 </j:jelly>

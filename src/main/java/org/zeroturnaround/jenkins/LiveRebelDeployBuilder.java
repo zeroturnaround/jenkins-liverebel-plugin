@@ -15,23 +15,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  *****************************************************************/
+import com.zeroturnaround.liverebel.api.impl.ServerGroup;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -40,6 +43,7 @@ import net.sf.json.JSONObject;
 
 import javax.servlet.ServletException;
 
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -50,124 +54,164 @@ import com.zeroturnaround.liverebel.api.CommandCenterFactory;
 import com.zeroturnaround.liverebel.api.ConnectException;
 import com.zeroturnaround.liverebel.api.Forbidden;
 import com.zeroturnaround.liverebel.api.ServerInfo;
+import org.zeroturnaround.liverebel.plugins.PluginLogger;
+import org.zeroturnaround.liverebel.plugins.PluginUtil;
+import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
 
 /**
  * @author Juri Timoshin
  */
 public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
-  public enum Strategy {
+  public final boolean isOverride;
+  public final boolean distribute;
+  public final boolean deployOrUpdate;
+  public final DeployOrDistribute deployOrDistribute;
+  public final String artifact;
+  public final String app;
+  public final String ver;
+  public final String metadata;
 
-    OFFLINE,
-    ROLLING
-  }
-  public final String artifacts;
-  public final boolean useFallbackIfCompatibleWithWarnings;
-  public final boolean uploadOnly;
-  public final Strategy strategy;
-  public final String contextPath;
-  private final List<ServerCheckbox> servers;
+  private static final Logger LOGGER = Logger.getLogger(LiveRebelDeployBuilder.class.getName());
 
   // Fields in config.jelly must match the parameter names in the
   // "DataBoundConstructor"
   @DataBoundConstructor
-  public LiveRebelDeployBuilder(String artifacts, String contextPath, List<ServerCheckbox> servers, String strategy, boolean useFallbackIfCompatibleWithWarnings, boolean uploadOnly) {
-    this.contextPath = contextPath;
-    this.artifacts = artifacts;
-    this.uploadOnly = uploadOnly;
-    this.strategy = Strategy.valueOf(strategy);
-    this.servers = servers;
-    this.useFallbackIfCompatibleWithWarnings = useFallbackIfCompatibleWithWarnings;
+  public LiveRebelDeployBuilder(String artifact, String metadata, DeployOrDistributeWrapper deployOrDistributeWrapper, OverrideForm overrideForm) {
+    this.deployOrDistribute = deployOrDistributeWrapper.deployOrDistribute;
+    if (this.deployOrDistribute == null) {
+      this.distribute = true;
+      this.deployOrUpdate = false;
+    }
+    else {
+      this.deployOrUpdate = true;
+      this.distribute = false;
+    }
+
+    this.artifact = artifact;
+    this.metadata = StringUtils.trimToNull(metadata);
+
+    if (overrideForm != null) {
+      this.app = StringUtils.trimToNull(overrideForm.getApp());
+      this.ver = StringUtils.trimToNull(overrideForm.getVer());
+      this.isOverride = true;
+    } else {
+      this.app = null;
+      this.ver = null;
+      this.isOverride = false;
+    }
+    LOGGER.info("DATA: { artifacts="+artifact+"; app="+app+"; ver="+ver+"; metadata="+metadata+"; deployOrDistribute="+deployOrDistribute+" }");
   }
 
   @Override
   public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException,
       InterruptedException {
-    if (!build.getResult().isBetterOrEqualTo(Result.UNSTABLE)) {
+
+    EnvVars envVars = build.getEnvironment(listener);
+    String artifact = envVars.expand(this.artifact);
+    String metadata = envVars.expand(this.metadata);
+    String app = envVars.expand(this.app);
+    String ver = envVars.expand(this.ver);
+    if (deployOrDistribute != null)
+      deployOrDistribute.setContextPathWithEnvVarReplaced(envVars.expand(deployOrDistribute.contextPath));
+
+    FilePath deployableFile;
+    FilePath metadataFilePath = null;
+    if (build.getWorkspace().isRemote()) {
+      new ArtifactArchiver(artifact, "", true).perform(build, launcher, listener);
+      deployableFile = new FilePath(build.getArtifactsDir()).child(artifact);
+      if (metadata != null)
+        metadataFilePath = new FilePath(build.getArtifactsDir()).child(metadata);
+    }
+    else {
+      deployableFile = build.getWorkspace().child(artifact);
+      if (metadata != null)
+        metadataFilePath = build.getWorkspace().child(metadata);
+    }
+
+    if (!deployableFile.exists()) {
+      listener.getLogger().println("Could not find the artifact to deploy. Please, specify it in job configuration.");
       return false;
     }
 
-    FilePath[] deployableFiles;
-    if (build.getWorkspace().isRemote()) {
-      new ArtifactArchiver(artifacts, "", true).perform(build, launcher, listener);
-      deployableFiles = new FilePath(build.getArtifactsDir()).list(artifacts);
-    }
-    else {
-      deployableFiles = build.getWorkspace().list(artifacts);
+    if (metadataFilePath != null) {
+      if (!metadataFilePath.exists()) {
+        listener.getLogger().println("Could not find the metadata file "+metadataFilePath.getRemote());
+        return false;
+      }
     }
 
-    CommandCenterFactory commandCenterFactory = new CommandCenterFactory().setUrl(getDescriptor().getLrUrl()).setVerbose(true).authenticate(getDescriptor().getAuthToken());
+    CommandCenterFactory commandCenterFactory = getCommandCenterFactory();
+    PluginUtil pluginUtil = new PluginUtil((PluginLogger)new JenkinsLogger(listener));
+    if (!pluginUtil.initCommandCenter(commandCenterFactory))
+      return false;
 
-    if (!new LiveRebelProxy(commandCenterFactory, listener).perform(deployableFiles, contextPath, getDeployableServers(),
-        strategy, useFallbackIfCompatibleWithWarnings, uploadOnly))
+    File metadataFile = null;
+    if (metadataFilePath != null)
+      metadataFile = new File(metadataFilePath.getRemote());
+
+    String contextPath = "";
+    UpdateStrategies updateStrategies = null;
+    if (deployOrDistribute != null) {
+      contextPath = deployOrDistribute.contextPath;
+      updateStrategies = (UpdateStrategies) deployOrDistribute.updateStrategies;
+    }
+
+    if (!pluginUtil.perform(new File(deployableFile.getRemote()), metadataFile, contextPath, updateStrategies, getDeployableServers(), app, ver))
       build.setResult(Result.FAILURE);
     return true;
+  }
+
+  protected CommandCenterFactory getCommandCenterFactory() {
+    return new CommandCenterFactory().setUrl(getDescriptor().getLrUrl()).setVerbose(true).authenticate(getDescriptor().getAuthToken());
   }
 
   // Overridden for better type safety.
   @Override
   public DescriptorImpl getDescriptor() {
-    return (DescriptorImpl) super.getDescriptor();
+    return (DescriptorImpl) Hudson.getInstance().getDescriptor(getClass());
   }
-
-//  public BuildStepMonitor getRequiredMonitorService() {
-//    return BuildStepMonitor.BUILD;
-//  }
 
   private List<String> getDeployableServers() {
     List<String> list = new ArrayList<String>();
-    if (servers != null) {
-      for (ServerCheckbox server : servers)
-        if (server.isSelected())
+    if (deployOrDistribute != null && deployOrDistribute.servers != null) {
+      for (ServerCheckbox server : deployOrDistribute.servers)
+        if (server.isSelected() && !server.isGroup() && server.isOnline())
           list.add(server.getServer());
     }
-
+    System.out.println("Deployable servers: " +  list);
     return list;
-  }
-
-  public List<ServerCheckbox> getServers() {
-    if (servers == null) {
-      return getDescriptor().getDefaultServers();
-    }
-
-    CommandCenter commandCenter = getDescriptor().newCommandCenter();
-    if (commandCenter != null) {
-      Map<String, ServerInfo> lrServers = commandCenter.getServers();
-      Map<String, ServerCheckbox> map = new HashMap<String, ServerCheckbox>();
-
-      for (ServerCheckbox checkbox : servers) {
-        map.put(checkbox.getServer(), checkbox);
-      }
-
-      servers.clear();
-      for (ServerInfo server : lrServers.values()) {
-        boolean checked = map.containsKey(server.getId()) ? map.get(server.getId()).isSelected() : false;
-        servers.add(new ServerCheckbox(server.getId(), server.getName(), checked, server.isConnected()));
-      }
-    }
-    return servers;
   }
 
   @Extension
   public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
     private static final Logger LOGGER = Logger.getLogger(DescriptorImpl.class.getName());
-
     public DescriptorImpl() {
       load();
+      staticAuthToken = authToken;
+      staticLrUrl = lrUrl;
     }
+
+    public static String staticAuthToken; //needed cause Jenkins cannot initialize static fields from xml;
+    public static String staticLrUrl;
     private String authToken;
     private String lrUrl;
 
-    public String getAuthToken() {
-      return authToken;
+    public static String getAuthToken() {
+      return staticAuthToken;
     }
 
-    public String getLrUrl() {
-      return lrUrl;
+    public static String getLrUrl() {
+      return staticLrUrl;
     }
 
-    public CommandCenter newCommandCenter() {
+    public boolean isMetadataSupported() {
+      CommandCenter cc = newCommandCenter();
+      return cc != null && !cc.getVersion().equals("2.0");
+    }
+
+    public static CommandCenter newCommandCenter() {
       if (getLrUrl() == null || getAuthToken() == null) {
         LOGGER.warning("Please, navigate to Jenkins Configuration to specify running LiveRebel Url and Authentication Token.");
         return null;
@@ -191,18 +235,6 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
         }
       }
       return null;
-    }
-
-    public List<ServerCheckbox> getDefaultServers() {
-      List<ServerCheckbox> servers = new ArrayList<ServerCheckbox>();
-      CommandCenter commandCenter = newCommandCenter();
-      if (commandCenter != null) {
-        for (ServerInfo server : commandCenter.getServers().values()) {
-          servers.add(new ServerCheckbox(server.getId(), server.getName(), false, server.isConnected()));
-        }
-      }
-
-      return servers;
     }
 
     public FormValidation doCheckLrUrl(@QueryParameter("lrUrl") final String value) throws IOException,
@@ -252,7 +284,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
      * This human readable name is used in the configuration screen.
      */
     public String getDisplayName() {
-      return "Deploy artifacts with LiveRebel";
+      return "Deploy or Update artifact with LiveRebel";
     }
 
     @Override
@@ -265,15 +297,52 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       return super.configure(req, formData);
     }
 
-    public FormValidation doCheckArtifacts(@AncestorInPath AbstractProject project, @QueryParameter String value)
+    public FormValidation doCheckArtifact(@AncestorInPath AbstractProject project, @QueryParameter String value)
         throws IOException, ServletException {
-      if (value == null || value.length() == 0) {
-        return FormValidation.error("Please, provide at least one artifact.");
+      if (value.contains(",")) {
+        return FormValidation.error("Please provide only one artifact.");
+      }
+      if (StringUtils.trimToNull(value) == null || value.length() == 0) {
+        return FormValidation.error("Please provide an artifact.");
       }
       else {
         return FilePath.validateFileMask(project.getSomeWorkspace(), value);
       }
     }
+
+    public FormValidation doCheckMetadata(@AncestorInPath AbstractProject project, @QueryParameter String value)
+      throws IOException, ServletException {
+
+      if (value.contains(",")) {
+        return FormValidation.error("Please provide only one artifact.");
+      }
+      if (StringUtils.trimToNull(value) != null) {
+        String fileExtension = null;
+        try {
+          fileExtension = value.substring(value.lastIndexOf('.')+1);
+        }
+        catch (Exception e) {
+          return FormValidation.error("Metadata must be a text file!");
+        }
+
+        if (!fileExtension.equals("txt"))
+          return FormValidation.error("Metadata must be a text file!");
+        return FilePath.validateFileMask(project.getSomeWorkspace(), value);
+      }
+      else {
+        return FormValidation.ok();
+      }
+    }
   }
+
+  public static final class DeployOrDistributeWrapper {
+    public final DeployOrDistribute deployOrDistribute;
+
+    @DataBoundConstructor
+    public DeployOrDistributeWrapper(DeployOrDistribute deployOrDistribute) {
+      this.deployOrDistribute = deployOrDistribute;
+    }
+  }
+
   private static final long serialVersionUID = 1L;
 }

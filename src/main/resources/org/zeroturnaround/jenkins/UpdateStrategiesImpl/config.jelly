@@ -1,0 +1,41 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:entry title="Update Strategies">
+  </f:entry>
+
+  <f:entry>
+    <f:checkbox name="hotpatch" checked="${instance.hotpatch}"/>
+    <label class="attach-previous">Hotpatch (online, instant)</label>
+  </f:entry>
+
+  <f:entry field="updateWithWarnings">
+    <div class="secondLevel">
+      <f:checkbox name="updateWithWarnings" title="Update if compatible with warnings"
+                  checked="${instance.useFallbackIfCompatibleWithWarnings}"/>
+    </div>
+  </f:entry>
+
+  <f:entry field="requestPause" help="/plugin/liverebel-deploy/help/help-requestPause.html">
+    <div class="secondLevel">
+      <label>Request pause timeout</label>
+      <f:textbox name="requestPause" default="30" clazz="positive-number" value="${instance.requestPause}"/>
+      seconds
+    </div>
+  </f:entry>
+
+  <f:entry>
+    <f:checkbox name="rolling" checked="${instance.rolling}"/>
+    <label class="attach-previous">Rolling restarts (online, session drain)</label>
+  </f:entry>
+  <f:entry field="sessionDrain" help="/plugin/liverebel-deploy/help/help-requestPause.html">
+    <div class="secondLevel">
+      <label>Session drain timeout</label>
+      <f:textbox name="sessionDrain" default="30" clazz="positive-number" value="${instance.sessionDrain}"/>
+      seconds
+    </div>
+  </f:entry>
+  <f:entry>
+    <f:checkbox name="fullRestart" checked="${instance.fullRestart}"/>
+    <label class="attach-previous">Full restart</label>
+  </f:entry>
+</j:jelly>

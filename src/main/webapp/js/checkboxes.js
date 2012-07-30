@@ -20,14 +20,19 @@ function addOnloadHandler(newFunction) {
 addOnloadHandler(checkAndAutoHide);
 
 function checkAndAutoHide() {
-  var servers = document.getElementById("lr-servers").childNodes[0].childNodes;
+  var servers = document.getElementById("lr-deployOrUpdate-servers").childNodes[0].childNodes;
   if (servers.length - 2 > 12) {
-    hideChildGroups();
+    hideChildGroups("lr-deployOrUpdate-servers");
+  }
+
+  servers = document.getElementById("lr-undeploy-servers").childNodes[0].childNodes;
+  if (servers.length - 2 > 12) {
+    hideChildGroups("lr-undeploy-servers");
   }
 }
 
-function hideChildGroups(){
-  var elems = document.getElementById("lr-servers").getElementsByTagName('*');
+function hideChildGroups(divName){
+  var elems = document.getElementById(divName).getElementsByTagName('*');
   var i;
   var searchForClassName = "topLevel";
   for (i in elems) {
@@ -45,12 +50,7 @@ function hideChildGroups(){
 }
 
 function toggleDependentCheckboxes(clickedElement) {
-//  if (clickedElement.checked && clickedElement.parentNode.className.trim() != "topLevel")
-//    clickedElement.parentNode.parentNode.parentNode.parentNode.parentNode.style.display="inline";
-//  else if(!clickedElement.checked && clickedElement.parentNode.className.trim() != "topLevel")
-//    clickedElement.parentNode.parentNode.parentNode.parentNode.parentNode.style.display="none";
-
-  var elems = document.getElementById("lr-servers").getElementsByTagName('*');
+  var elems = document.getElementById(clickedElement.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.id).getElementsByTagName('*');
   toggleUpward(clickedElement.parentNode, elems);
   toggleDownward(clickedElement, elems);
 }

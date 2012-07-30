@@ -12,6 +12,10 @@
     <f:textbox name="isGroup" value="${instance.isGroup()}"/>
   </f:invisibleEntry>
 
+  <f:invisibleEntry>
+    <f:textbox name="online" value="${instance.isOnline()}"/>
+  </f:invisibleEntry>
+
   <f:entry field="" >
     <div class="${instance.getIndentDepthAsCSSClass()} ${instance.getParentNames()}">
       <j:if test="${instance.isGroup()}">

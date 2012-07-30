@@ -1,0 +1,21 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+
+  <f:entry title="Context path" field="contextPath">
+    <f:textbox/>
+  </f:entry>
+
+  <f:entry title="Servers">
+    <div id="lr-deployOrUpdate-servers">
+      <f:repeatableProperty field="servers" noAddButton="true" default="${descriptor.getDefaultServers()}"/>
+    </div>
+  </f:entry>
+
+  <f:advanced>
+    <f:property field="updateStrategies">
+    </f:property>
+  </f:advanced>
+
+
+</j:jelly>

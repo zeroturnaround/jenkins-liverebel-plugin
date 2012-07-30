@@ -3,7 +3,7 @@
   <f:entry title="Update Strategies">
   </f:entry>
 
-  <f:entry>
+  <f:entry field="hotpatch">
     <f:checkbox name="hotpatch" checked="${instance.hotpatch}"/>
     <label class="attach-previous">Hotpatch (online, instant)</label>
   </f:entry>
@@ -15,7 +15,7 @@
     </div>
   </f:entry>
 
-  <f:entry field="requestPause" help="/plugin/liverebel-deploy/help/help-requestPause.html">
+  <f:entry field="requestPause">
     <div class="secondLevel">
       <label>Request pause timeout</label>
       <f:textbox name="requestPause" default="30" clazz="positive-number" value="${instance.requestPause}"/>
@@ -23,11 +23,11 @@
     </div>
   </f:entry>
 
-  <f:entry>
+  <f:entry field="rolling">
     <f:checkbox name="rolling" checked="${instance.rolling}"/>
     <label class="attach-previous">Rolling restarts (online, session drain)</label>
   </f:entry>
-  <f:entry field="sessionDrain" help="/plugin/liverebel-deploy/help/help-requestPause.html">
+  <f:entry field="sessionDrain">
     <div class="secondLevel">
       <label>Session drain timeout</label>
       <f:textbox name="sessionDrain" default="30" clazz="positive-number" value="${instance.sessionDrain}"/>

@@ -1,4 +1,4 @@
-package org.zeroturnaround.jenkins;
+package org.zeroturnaround.jenkins.util;
 
 import hudson.model.BuildListener;
 import org.zeroturnaround.liverebel.plugins.PluginLogger;

@@ -32,8 +32,8 @@
   </f:entry>
 
   <f:nested>
-    <table style="margin-left: -3px;width: 300px;">
-      <f:optionalBlock name="overrideForm" title="Override artifact liverebel.xml" checked="${instance.isOverride}">
+    <table style="margin-left: -3px; width: 300px;">
+      <f:optionalBlock name="overrideForm" title="Override the version information in the artifact" checked="${instance.isOverride}">
 
         <f:entry title="Application Name" field="app">
           <f:textbox name="app" value="${instance.app}"/>
@@ -54,14 +54,17 @@
 
   <f:nested>
     <table style="margin-left: -3px;width: 450px;">
-      <f:radioBlock name="deployOrDistributeWrapper" title="Distribute artifact to LiveRebel"
-                    checked="${instance.distribute}">
+      <f:radioBlock name="actionWrapper" value="DISTRIBUTE" title="Distribute artifact to LiveRebel"
+                    checked="${instance.distributeChecked}"/>
+      <f:radioBlock name="actionWrapper" value="DEPLOYORUPDATE" title="Deploy or update artifact"
+                    checked="${instance.deployOrUpdateChecked}">
+        <f:property field="deployOrUpdate"/>
       </f:radioBlock>
-      <f:radioBlock name="deployOrDistributeWrapper" title="Deploy or update artifact"
-                    checked="${instance.deployOrUpdate}">
-        <f:property field="deployOrDistribute"/>
+      <f:radioBlock name="actionWrapper" value="UNDEPLOY" title="Undeploy artifact"
+                    checked="${instance.undeployChecked}">
+        <f:property field="undeploy"/>
+      </f:radioBlock>
 
-      </f:radioBlock>
     </table>
   </f:nested>
 

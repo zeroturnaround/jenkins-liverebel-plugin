@@ -15,7 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  *****************************************************************/
-import com.zeroturnaround.liverebel.api.impl.ServerGroup;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -36,7 +35,6 @@ import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONObject;
@@ -53,7 +51,7 @@ import com.zeroturnaround.liverebel.api.CommandCenter;
 import com.zeroturnaround.liverebel.api.CommandCenterFactory;
 import com.zeroturnaround.liverebel.api.ConnectException;
 import com.zeroturnaround.liverebel.api.Forbidden;
-import com.zeroturnaround.liverebel.api.ServerInfo;
+import org.zeroturnaround.jenkins.util.JenkinsLogger;
 import org.zeroturnaround.liverebel.plugins.PluginLogger;
 import org.zeroturnaround.liverebel.plugins.PluginUtil;
 import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
@@ -64,28 +62,52 @@ import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
 public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
   public final boolean isOverride;
-  public final boolean distribute;
-  public final boolean deployOrUpdate;
-  public final DeployOrDistribute deployOrDistribute;
+  public final boolean distributeChecked;
+  public final boolean undeployChecked;
+  public final boolean deployOrUpdateChecked;
+  public final DeployOrUpdate deployOrUpdate;
+  public final Undeploy undeploy;
   public final String artifact;
   public final String app;
   public final String ver;
   public final String metadata;
+  private final Action currentAction;
 
   private static final Logger LOGGER = Logger.getLogger(LiveRebelDeployBuilder.class.getName());
 
+  public enum Action {
+    UNDEPLOY,
+    DEPLOYORUPDATE,
+    DISTRIBUTE
+  }
   // Fields in config.jelly must match the parameter names in the
   // "DataBoundConstructor"
   @DataBoundConstructor
-  public LiveRebelDeployBuilder(String artifact, String metadata, DeployOrDistributeWrapper deployOrDistributeWrapper, OverrideForm overrideForm) {
-    this.deployOrDistribute = deployOrDistributeWrapper.deployOrDistribute;
-    if (this.deployOrDistribute == null) {
-      this.distribute = true;
-      this.deployOrUpdate = false;
-    }
-    else {
-      this.deployOrUpdate = true;
-      this.distribute = false;
+  public LiveRebelDeployBuilder(String artifact, String metadata, ActionWrapper actionWrapper, OverrideForm overrideForm) {
+    this.undeploy = actionWrapper.undeploy;
+    this.deployOrUpdate = actionWrapper.deployOrUpdate;
+    currentAction = actionWrapper.value;
+
+    switch (currentAction) {
+      case UNDEPLOY:
+        this.undeployChecked = true;
+        this.distributeChecked = false;
+        this.deployOrUpdateChecked = false;
+        break;
+      case DEPLOYORUPDATE:
+        this.deployOrUpdateChecked = true;
+        this.distributeChecked = false;
+        this.undeployChecked = false;
+        break;
+      case DISTRIBUTE:
+        this.distributeChecked = true;
+        this.deployOrUpdateChecked = true;
+        this.undeployChecked = false;
+        break;
+      default:
+        this.distributeChecked = true;
+        this.deployOrUpdateChecked = false;
+        this.undeployChecked = false;
     }
 
     this.artifact = artifact;
@@ -100,7 +122,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       this.ver = null;
       this.isOverride = false;
     }
-    LOGGER.info("DATA: { artifacts="+artifact+"; app="+app+"; ver="+ver+"; metadata="+metadata+"; deployOrDistribute="+deployOrDistribute+" }");
+    LOGGER.info("DATA: { artifacts="+artifact+"; app="+app+"; ver="+ver+"; metadata="+metadata+"; deployOrUpdate="+ deployOrUpdate +" }");
   }
 
   @Override
@@ -112,8 +134,8 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     String metadata = envVars.expand(this.metadata);
     String app = envVars.expand(this.app);
     String ver = envVars.expand(this.ver);
-    if (deployOrDistribute != null)
-      deployOrDistribute.setContextPathWithEnvVarReplaced(envVars.expand(deployOrDistribute.contextPath));
+    if (deployOrUpdate != null)
+      deployOrUpdate.setContextPathWithEnvVarReplaced(envVars.expand(deployOrUpdate.contextPath));
 
     FilePath deployableFile;
     FilePath metadataFilePath = null;
@@ -152,12 +174,12 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
     String contextPath = "";
     UpdateStrategies updateStrategies = null;
-    if (deployOrDistribute != null) {
-      contextPath = deployOrDistribute.contextPath;
-      updateStrategies = (UpdateStrategies) deployOrDistribute.updateStrategies;
+    if (deployOrUpdate != null) {
+      contextPath = deployOrUpdate.contextPath;
+      updateStrategies = (UpdateStrategies) deployOrUpdate.updateStrategies;
     }
 
-    if (!pluginUtil.perform(new File(deployableFile.getRemote()), metadataFile, contextPath, updateStrategies, getDeployableServers(), app, ver))
+    if (!pluginUtil.perform(new File(deployableFile.getRemote()), metadataFile, contextPath, this.undeploy != null, updateStrategies, getDeployableServers(), app, ver))
       build.setResult(Result.FAILURE);
     return true;
   }
@@ -174,10 +196,18 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
   private List<String> getDeployableServers() {
     List<String> list = new ArrayList<String>();
-    if (deployOrDistribute != null && deployOrDistribute.servers != null) {
-      for (ServerCheckbox server : deployOrDistribute.servers)
-        if (server.isSelected() && !server.isGroup() && server.isOnline())
-          list.add(server.getServer());
+    if (currentAction.equals(Action.DEPLOYORUPDATE)) {
+      if (deployOrUpdate != null && deployOrUpdate.servers != null) {
+        for (ServerCheckbox server : deployOrUpdate.servers)
+          if (server.isSelected() && !server.isGroup() && server.isOnline())
+            list.add(server.getServer());
+      }
+    } else if (currentAction.equals(Action.UNDEPLOY)) {
+      if (undeploy != null && undeploy.servers != null) {
+        for (ServerCheckbox server : undeploy.servers)
+          if (server.isSelected() && !server.isGroup() && server.isOnline())
+            list.add(server.getServer());
+      }
     }
     System.out.println("Deployable servers: " +  list);
     return list;
@@ -195,6 +225,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
     public static String staticAuthToken; //needed cause Jenkins cannot initialize static fields from xml;
     public static String staticLrUrl;
+
     private String authToken;
     private String lrUrl;
 
@@ -218,8 +249,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       }
 
       try {
-        CommandCenter commandCenter = new CommandCenterFactory().setUrl(getLrUrl()).setVerbose(true).authenticate(getAuthToken()).newCommandCenter();
-        return commandCenter;
+        return new CommandCenterFactory().setUrl(getLrUrl()).setVerbose(true).authenticate(getAuthToken()).newCommandCenter();
       }
       catch (Forbidden e) {
         LOGGER.warning("ERROR! Access denied. Please, navigate to Jenkins Configuration to specify LiveRebel Authentication Token.");
@@ -335,12 +365,16 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     }
   }
 
-  public static final class DeployOrDistributeWrapper {
-    public final DeployOrDistribute deployOrDistribute;
+  public static final class ActionWrapper {
+    public final DeployOrUpdate deployOrUpdate;
+    public final Undeploy undeploy;
+    public final Action value;
 
     @DataBoundConstructor
-    public DeployOrDistributeWrapper(DeployOrDistribute deployOrDistribute) {
-      this.deployOrDistribute = deployOrDistribute;
+    public ActionWrapper(DeployOrUpdate deployOrUpdate, String value, Undeploy undeploy) {
+      this.undeploy = undeploy;
+      this.deployOrUpdate = deployOrUpdate;
+      this.value = Action.valueOf(value);
     }
   }
 

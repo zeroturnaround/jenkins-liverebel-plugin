@@ -20,14 +20,20 @@ function addOnloadHandler(newFunction) {
 addOnloadHandler(checkAndAutoHide);
 
 function checkAndAutoHide() {
-  var servers = document.getElementById("lr-deployOrUpdate-servers").childNodes[0].childNodes;
-  if (servers.length - 2 > 12) {
-    hideChildGroups("lr-deployOrUpdate-servers");
+  var deployOrUpdate = document.getElementById("lr-deployOrUpdate-servers");
+  if (deployOrUpdate) {
+    var servers = deployOrUpdate.childNodes[0].childNodes;
+    if (servers.length - 2 > 12) {
+      hideChildGroups("lr-deployOrUpdate-servers");
+    }
   }
 
-  servers = document.getElementById("lr-undeploy-servers").childNodes[0].childNodes;
-  if (servers.length - 2 > 12) {
-    hideChildGroups("lr-undeploy-servers");
+  var undeploy = document.getElementById("lr-undeploy-servers");
+  if (undeploy) {
+    servers = undeploy.childNodes[0].childNodes;
+    if (servers.length - 2 > 12) {
+      hideChildGroups("lr-undeploy-servers");
+    }
   }
 }
 

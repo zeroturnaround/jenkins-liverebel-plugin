@@ -63,7 +63,7 @@ public class ServersUtil {
     return serversLoc;
   }
 
-  public boolean isServerGroupsSupported(String currentVersion) {return !currentVersion.equals("2.0");}
+  public boolean isServerGroupsSupported(String currentVersion) {return !currentVersion.startsWith("2.0");}
 
   public List<ServerCheckbox> showServerGroups(CommandCenter commandCenter) {
     List<ServerGroup> topLevelServerGroups = commandCenter.getGroups("");

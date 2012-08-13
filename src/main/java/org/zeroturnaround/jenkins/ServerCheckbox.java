@@ -9,27 +9,29 @@ import hudson.model.Hudson;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.zeroturnaround.liverebel.plugins.Server;
 
-public class ServerCheckbox implements Describable<ServerCheckbox> {
+public class ServerCheckbox implements Describable<ServerCheckbox>, Server {
 
   private final String title;
-  private final String server;
+  private final String id;
   private final String parentNames;
 
   private final int indentDepth;
 
-  private final boolean selected;
+  private final boolean checked;
 
-  private final boolean online;
+  private final boolean connected;
   private final boolean isGroup;
+
   @DataBoundConstructor
   public ServerCheckbox(String server, String title, String parentNames, int indentDepth, boolean selected, boolean online, boolean isGroup) {
-    this.server = server;
+    this.id = server;
     this.parentNames = parentNames;
     this.indentDepth = indentDepth;
-    this.online = online;
+    this.connected = online;
     this.title = title;
-    this.selected = selected;
+    this.checked = selected;
     this.isGroup = isGroup;
   }
 
@@ -61,19 +63,47 @@ public class ServerCheckbox implements Describable<ServerCheckbox> {
   }
 
   public String getServer() {
-    return server;
+    return id;
   }
 
   public boolean isOnline() {
-    return online;
+    return connected;
   }
 
   public String getTitle() {
     return title;
   }
 
+  public void setTitle(String title) {
+    throw new UnsupportedOperationException("setTitle");
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    throw new UnsupportedOperationException("setId");
+  }
+
+  public boolean isConnected() {
+    return connected;
+  }
+
+  public void setConnected(boolean connected) {
+    throw new UnsupportedOperationException("setConnected");
+  }
+
+  public boolean isChecked() {
+    return checked;
+  }
+
+  public void setChecked(boolean checked) {
+    throw new UnsupportedOperationException("setChecked");
+  }
+
   public boolean isSelected() {
-    return selected;
+    return checked;
   }
 
   public DescriptorImpl getDescriptor() {
@@ -82,7 +112,7 @@ public class ServerCheckbox implements Describable<ServerCheckbox> {
 
   @Override
   public String toString() {
-    return "{ GROUP_NAME="+getTitle()+" selected="+isSelected()+" isGroup="+isGroup() + " online="+isOnline() + " parentNames="+parentNames+" }";
+    return "{ GROUP_NAME="+getTitle()+" checked="+isSelected()+" isGroup="+isGroup() + " connected="+isOnline() + " parentNames="+parentNames+" }";
   }
 
   @Extension

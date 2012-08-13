@@ -12,4 +12,8 @@ public class JenkinsLogger implements PluginLogger {
   public void log(String message) {
     listener.getLogger().println(message);
   }
+
+  public void error(String error) {
+    listener.getLogger().println(error);
+  }
 }

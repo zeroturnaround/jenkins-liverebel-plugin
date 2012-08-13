@@ -54,6 +54,7 @@ import com.zeroturnaround.liverebel.api.Forbidden;
 import org.zeroturnaround.jenkins.util.JenkinsLogger;
 import org.zeroturnaround.liverebel.plugins.PluginLogger;
 import org.zeroturnaround.liverebel.plugins.PluginUtil;
+import org.zeroturnaround.liverebel.plugins.Server;
 import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
 
 /**
@@ -164,9 +165,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     }
 
     CommandCenterFactory commandCenterFactory = getCommandCenterFactory();
-    PluginUtil pluginUtil = new PluginUtil((PluginLogger)new JenkinsLogger(listener));
-    if (!pluginUtil.initCommandCenter(commandCenterFactory))
-      return false;
+    PluginUtil pluginUtil = new PluginUtil(commandCenterFactory, (PluginLogger)new JenkinsLogger(listener));
 
     File metadataFile = null;
     if (metadataFilePath != null)
@@ -199,17 +198,17 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     if (currentAction.equals(Action.DEPLOYORUPDATE)) {
       if (deployOrUpdate != null && deployOrUpdate.servers != null) {
         for (ServerCheckbox server : deployOrUpdate.servers)
-          if (server.isSelected() && !server.isGroup() && server.isOnline())
-            list.add(server.getServer());
+          if (server.isChecked() && !server.isGroup() && server.isConnected())
+            list.add(server.getId());
       }
     } else if (currentAction.equals(Action.UNDEPLOY)) {
       if (undeploy != null && undeploy.servers != null) {
         for (ServerCheckbox server : undeploy.servers)
-          if (server.isSelected() && !server.isGroup() && server.isOnline())
-            list.add(server.getServer());
+          if (server.isChecked() && !server.isGroup() && server.isConnected())
+            list.add(server.getId());
       }
     }
-    System.out.println("Deployable servers: " +  list);
+
     return list;
   }
 
@@ -323,17 +322,19 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       // set that to properties and call save().
       authToken = formData.getString("authToken");
       lrUrl = "https://" + formData.getString("lrUrl").replaceFirst("http://", "").replaceFirst("https://", "");
+      staticAuthToken = authToken;
+      staticLrUrl = lrUrl;
       save();
       return super.configure(req, formData);
     }
 
     public FormValidation doCheckArtifact(@AncestorInPath AbstractProject project, @QueryParameter String value)
         throws IOException, ServletException {
-      if (value.contains(",")) {
-        return FormValidation.error("Please provide only one artifact.");
-      }
+
       if (StringUtils.trimToNull(value) == null || value.length() == 0) {
         return FormValidation.error("Please provide an artifact.");
+      } else  if (value.contains(",")) {
+        return FormValidation.error("Please provide only one artifact.");
       }
       else {
         return FilePath.validateFileMask(project.getSomeWorkspace(), value);
@@ -343,13 +344,13 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     public FormValidation doCheckMetadata(@AncestorInPath AbstractProject project, @QueryParameter String value)
       throws IOException, ServletException {
 
-      if (value.contains(",")) {
-        return FormValidation.error("Please provide only one artifact.");
-      }
       if (StringUtils.trimToNull(value) != null) {
+        if (value.contains(",")) {
+          return FormValidation.error("Please provide only one metadata file.");
+        }
         String fileExtension = null;
         try {
-          fileExtension = value.substring(value.lastIndexOf('.')+1);
+          fileExtension = value.substring(value.lastIndexOf('.') + 1);
         }
         catch (Exception e) {
           return FormValidation.error("Metadata must be a text file!");

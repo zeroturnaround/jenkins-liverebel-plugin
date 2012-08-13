@@ -6,9 +6,12 @@ import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.zeroturnaround.jenkins.util.ServersUtil;
+import org.zeroturnaround.liverebel.plugins.ServersUtil;
 
 import java.util.List;
+
+import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverCheckBoxToServer;
+import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverToServerCheckBox;
 
 public class DeployOrUpdate implements Describable<DeployOrUpdate> {
 
@@ -45,7 +48,7 @@ public class DeployOrUpdate implements Describable<DeployOrUpdate> {
   }
 
   public List<ServerCheckbox> getServers() {
-    return new ServersUtil(servers).getServers();
+    return serverToServerCheckBox(new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), serverCheckBoxToServer(servers)).getServers());
   }
 
   public DescriptorImpl getDescriptor() {
@@ -61,8 +64,9 @@ public class DeployOrUpdate implements Describable<DeployOrUpdate> {
     }
 
     public List<ServerCheckbox> getDefaultServers() {
-      return new ServersUtil(null).getDefaultServers();
+      return serverToServerCheckBox(new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getDefaultServers());
     }
 
   }
+
 }

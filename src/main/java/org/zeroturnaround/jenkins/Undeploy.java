@@ -8,6 +8,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.zeroturnaround.liverebel.plugins.ServersUtil;
 
 import java.util.List;
+import java.util.UUID;
 
 
 import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverCheckBoxToServer;
@@ -43,6 +44,10 @@ public class Undeploy implements Describable<Undeploy> {
 
     public List<ServerCheckbox> getDefaultServers() {
       return serverToServerCheckBox(new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getDefaultServers());
+    }
+
+    public String getUniqueId() {
+      return UUID.randomUUID().toString();
     }
   }
 }

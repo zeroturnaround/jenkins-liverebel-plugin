@@ -32,7 +32,7 @@
   </f:entry>
 
   <f:nested>
-    <table style="margin-left: -3px; width: 300px;">
+    <table style="margin-left: -3px; width: 340px;">
       <f:optionalBlock name="overrideForm" title="Override the version information in the artifact" checked="${instance.isOverride}">
 
         <f:entry title="Application Name" field="app">
@@ -47,7 +47,7 @@
   </f:nested>
 
   <j:if test="${descriptor.isMetadataSupported()}">
-    <f:entry title="Metadata associated with this archive" field="metadata">
+    <f:entry title="Metadata" field="metadata">
       <f:textbox/>
     </f:entry>
   </j:if>

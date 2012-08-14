@@ -7,7 +7,7 @@
   </f:entry>
 
   <f:entry title="Servers">
-    <div id="lr-deployOrUpdate-servers">
+    <div id="lr-deployOrUpdate-servers-${descriptor.getUniqueId()}" class="lr-deployOrUpdate-servers">
       <f:repeatableProperty field="servers" noAddButton="true" default="${descriptor.getDefaultServers()}"/>
     </div>
   </f:entry>

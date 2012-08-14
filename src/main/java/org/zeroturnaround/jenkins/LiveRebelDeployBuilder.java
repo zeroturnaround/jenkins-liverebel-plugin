@@ -102,7 +102,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
         break;
       case DISTRIBUTE:
         this.distributeChecked = true;
-        this.deployOrUpdateChecked = true;
+        this.deployOrUpdateChecked = false;
         this.undeployChecked = false;
         break;
       default:

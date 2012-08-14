@@ -2,7 +2,7 @@
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
   <f:entry title="Servers">
-    <div id="lr-undeploy-servers">
+    <div id="lr-undeploy-servers-${descriptor.getUniqueId()}" class="lr-undeploy-servers">
       <f:repeatableProperty field="servers" noAddButton="true" default="${descriptor.getDefaultServers()}"/>
     </div>
   </f:entry>

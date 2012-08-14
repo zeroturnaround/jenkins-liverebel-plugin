@@ -27,6 +27,7 @@
     <f:checkbox name="rolling" checked="${instance.rolling}"/>
     <label class="attach-previous">Rolling restarts (online, session drain)</label>
   </f:entry>
+
   <f:entry field="sessionDrain">
     <div class="secondLevel">
       <label>Session drain timeout</label>
@@ -34,7 +35,8 @@
       seconds
     </div>
   </f:entry>
-  <f:entry>
+
+  <f:entry field="fullRestart">
     <f:checkbox name="fullRestart" checked="${instance.fullRestart}"/>
     <label class="attach-previous">Full restart</label>
   </f:entry>

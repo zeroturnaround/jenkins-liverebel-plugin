@@ -20,19 +20,23 @@ function addOnloadHandler(newFunction) {
 addOnloadHandler(checkAndAutoHide);
 
 function checkAndAutoHide() {
-  var deployOrUpdate = document.getElementById("lr-deployOrUpdate-servers");
+  var deployOrUpdate = document.getElementsByClassName("lr-deployOrUpdate-servers");
   if (deployOrUpdate) {
-    var servers = deployOrUpdate.childNodes[0].childNodes;
-    if (servers.length - 2 > 12) {
-      hideChildGroups("lr-deployOrUpdate-servers");
+    for (var i = 0; i < deployOrUpdate.length; i++) {
+      var servers = deployOrUpdate[i].childNodes[0].childNodes;
+      if (servers.length - 2 > 12) {
+        hideChildGroups(deployOrUpdate[i].id);
+      }
     }
   }
 
-  var undeploy = document.getElementById("lr-undeploy-servers");
+  var undeploy = document.getElementsByClassName("lr-undeploy-servers");
   if (undeploy) {
-    servers = undeploy.childNodes[0].childNodes;
-    if (servers.length - 2 > 12) {
-      hideChildGroups("lr-undeploy-servers");
+    for (var i = 0; i < undeploy.length; i++) {
+      servers = undeploy[i].childNodes[0].childNodes;
+      if (servers.length - 2 > 12) {
+        hideChildGroups(undeploy[i].id);
+      }
     }
   }
 }
@@ -56,7 +60,9 @@ function hideChildGroups(divName){
 }
 
 function toggleDependentCheckboxes(clickedElement) {
+  console.log(clickedElement);
   var elems = document.getElementById(clickedElement.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.id).getElementsByTagName('*');
+  console.log(elems);
   toggleUpward(clickedElement.parentNode, elems);
   toggleDownward(clickedElement, elems);
 }

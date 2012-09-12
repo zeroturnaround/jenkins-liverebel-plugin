@@ -242,22 +242,8 @@
       <scope>test</scope>
     </dependency>
 		<!-- This dependency should come before the junit dependency, if any.  -->
-    <dependency>
-      <groupId>mockit</groupId>
-      <artifactId>jmockit</artifactId>
-      <version>0.999.10</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>jenkins-test-harness</artifactId>
-      <version>1.423</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>r09</version>
-    </dependency>
+
+
   </dependencies>
 
   <repositories>

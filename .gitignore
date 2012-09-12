@@ -1,8 +1,10 @@
 .classpath
 .project
 .settings
+.DS_Store
 bin
 target
+jenkins_plugin_mockups
 vis.py
 work
 .*swp

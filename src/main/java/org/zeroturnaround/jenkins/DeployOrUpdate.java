@@ -17,7 +17,6 @@ import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverToServerCh
 public class DeployOrUpdate implements Describable<DeployOrUpdate> {
 
   public final String contextPath;
-
   private String contextPathWithEnvVarReplaced;
 
   public final UpdateStrategiesImpl updateStrategies;
@@ -30,7 +29,11 @@ public class DeployOrUpdate implements Describable<DeployOrUpdate> {
     this.servers = servers;
   }
 
+
   public String getContextPath() {
+    return contextPath;
+  }
+  public String getContextPathWithEnv() {
     if (contextPathWithEnvVarReplaced == null) {
       return contextPath;
     }

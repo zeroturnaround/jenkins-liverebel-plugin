@@ -174,11 +174,15 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     String contextPath = "";
     UpdateStrategies updateStrategies = null;
     if (deployOrUpdate != null) {
-      contextPath = deployOrUpdate.contextPath;
-      updateStrategies = (UpdateStrategies) deployOrUpdate.updateStrategies;
+      contextPath = deployOrUpdate.getContextPathWithEnv();
+      updateStrategies = deployOrUpdate.updateStrategies;
     }
 
-    if (!pluginUtil.perform(new File(deployableFile.getRemote()), metadataFile, contextPath, this.undeploy != null, updateStrategies, getDeployableServers(), app, ver))
+    String undeployId = null;
+    if (this.undeploy != null) {
+      undeployId = PluginUtil.XML;
+    }
+    if (!pluginUtil.perform(new File(deployableFile.getRemote()), metadataFile, contextPath, undeployId, updateStrategies, getDeployableServers(), app, ver))
       build.setResult(Result.FAILURE);
     return true;
   }

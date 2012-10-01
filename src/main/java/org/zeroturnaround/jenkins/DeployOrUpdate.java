@@ -6,33 +6,51 @@ import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.zeroturnaround.jenkins.util.ArtifactAndMetadataDescriptor;
 import org.zeroturnaround.liverebel.plugins.ServersUtil;
 
 import java.util.List;
 import java.util.UUID;
 
+import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverCheckBoxToServer;
 import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverToServerCheckBox;
 
-public class DeployOrUpdate implements Describable<DeployOrUpdate> {
+public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
 
   public final String contextPath;
+  public final String artifact;
+  public final String app;
+  public final String ver;
+  public final String metadata;
   private String contextPathWithEnvVarReplaced;
 
   public final UpdateStrategiesImpl updateStrategies;
   public final List<ServerCheckbox> servers;
+  public final boolean isOverride;
 
   @DataBoundConstructor
-  public DeployOrUpdate(String contextPath, UpdateStrategiesImpl updateStrategies, List<ServerCheckbox> servers) {
-    this.contextPath = StringUtils.trimToNull(contextPath);
+  public DeployOrUpdate(String contextPath, String artifact, String metadata, UpdateStrategiesImpl updateStrategies, List<ServerCheckbox> servers, OverrideForm overrideForm) {
+    this.artifact = trimToNull(artifact);
+    this.metadata = trimToNull(metadata);
+    this.contextPath = trimToNull(contextPath);
     this.updateStrategies = updateStrategies;
     this.servers = servers;
+    if (overrideForm != null) {
+      this.app = trimToNull(overrideForm.getApp());
+      this.ver = trimToNull(overrideForm.getVer());
+      this.isOverride = true;
+    } else {
+      this.app = null;
+      this.ver = null;
+      this.isOverride = false;
+    }
   }
-
 
   public String getContextPath() {
     return contextPath;
   }
+
   public String getContextPathWithEnv() {
     if (contextPathWithEnvVarReplaced == null) {
       return contextPath;
@@ -60,11 +78,11 @@ public class DeployOrUpdate implements Describable<DeployOrUpdate> {
   }
 
   @Extension
-  public static class DescriptorImpl extends Descriptor<DeployOrUpdate> {
+  public static class DescriptorImpl extends ArtifactAndMetadataDescriptor<LiveRebelDeployBuilder.ActionWrapper> {
 
     @Override
     public String getDisplayName() {
-      return "Deploy or distribute";
+      return "Deploy or update";
     }
 
     public List<ServerCheckbox> getDefaultServers() {
@@ -74,7 +92,6 @@ public class DeployOrUpdate implements Describable<DeployOrUpdate> {
     public String getUniqueId() {
       return UUID.randomUUID().toString();
     }
-
   }
 
 }

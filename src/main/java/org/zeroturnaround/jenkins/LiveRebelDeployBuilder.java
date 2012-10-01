@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  *****************************************************************/
+import hudson.DescriptorExtensionList;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -22,6 +23,8 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.ArtifactArchiver;
@@ -34,6 +37,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,8 +45,6 @@ import net.sf.json.JSONObject;
 
 import javax.servlet.ServletException;
 
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -51,140 +53,115 @@ import com.zeroturnaround.liverebel.api.CommandCenter;
 import com.zeroturnaround.liverebel.api.CommandCenterFactory;
 import com.zeroturnaround.liverebel.api.ConnectException;
 import com.zeroturnaround.liverebel.api.Forbidden;
+import org.zeroturnaround.jenkins.updateModes.FailBuild;
+import org.zeroturnaround.jenkins.updateModes.LiveRebelDefault;
+import org.zeroturnaround.jenkins.updateModes.UpdateMode;
 import org.zeroturnaround.jenkins.util.JenkinsLogger;
+import org.zeroturnaround.liverebel.plugins.PluginConf;
 import org.zeroturnaround.liverebel.plugins.PluginLogger;
 import org.zeroturnaround.liverebel.plugins.PluginUtil;
-import org.zeroturnaround.liverebel.plugins.Server;
 import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
 
-/**
- * @author Juri Timoshin
- */
 public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
-  public final boolean isOverride;
-  public final boolean distributeChecked;
-  public final boolean undeployChecked;
-  public final boolean deployOrUpdateChecked;
   public final DeployOrUpdate deployOrUpdate;
   public final Undeploy undeploy;
-  public final String artifact;
-  public final String app;
-  public final String ver;
-  public final String metadata;
-  private final Action currentAction;
+  public final Upload upload;
+  public final ActionWrapper action;
+
+  private final PluginConf conf;
 
   private static final Logger LOGGER = Logger.getLogger(LiveRebelDeployBuilder.class.getName());
 
-  public enum Action {
-    UNDEPLOY,
-    DEPLOYORUPDATE,
-    DISTRIBUTE
-  }
+
   // Fields in config.jelly must match the parameter names in the
   // "DataBoundConstructor"
   @DataBoundConstructor
-  public LiveRebelDeployBuilder(String artifact, String metadata, ActionWrapper actionWrapper, OverrideForm overrideForm) {
-    this.undeploy = actionWrapper.undeploy;
-    this.deployOrUpdate = actionWrapper.deployOrUpdate;
-    currentAction = actionWrapper.value;
-
-    switch (currentAction) {
-      case UNDEPLOY:
-        this.undeployChecked = true;
-        this.distributeChecked = false;
-        this.deployOrUpdateChecked = false;
-        break;
-      case DEPLOYORUPDATE:
-        this.deployOrUpdateChecked = true;
-        this.distributeChecked = false;
-        this.undeployChecked = false;
-        break;
-      case DISTRIBUTE:
-        this.distributeChecked = true;
-        this.deployOrUpdateChecked = false;
-        this.undeployChecked = false;
-        break;
-      default:
-        this.distributeChecked = true;
-        this.deployOrUpdateChecked = false;
-        this.undeployChecked = false;
-    }
-
-    this.artifact = artifact;
-    this.metadata = StringUtils.trimToNull(metadata);
-
-    if (overrideForm != null) {
-      this.app = StringUtils.trimToNull(overrideForm.getApp());
-      this.ver = StringUtils.trimToNull(overrideForm.getVer());
-      this.isOverride = true;
+  public LiveRebelDeployBuilder(ActionWrapper action) {
+    this.action = action;
+    if (action instanceof Undeploy) {
+      this.undeploy = (Undeploy) action;
+      this.upload = null;
+      this.deployOrUpdate = null;
+      conf = new PluginConf(PluginConf.Action.UNDEPLOY);
+    } else if (action instanceof Upload) {
+      this.upload = (Upload) action;
+      this.undeploy = null;
+      this.deployOrUpdate = null;
+      conf = new PluginConf(PluginConf.Action.UPLOAD);
+    } else if (action instanceof DeployOrUpdate) {
+      this.undeploy = null;
+      this.upload = null;
+      this.deployOrUpdate = (DeployOrUpdate) action;
+      conf = new PluginConf(PluginConf.Action.DEPLOY_OR_UPDATE);
     } else {
-      this.app = null;
-      this.ver = null;
-      this.isOverride = false;
+      this.upload = (Upload) action;
+      this.undeploy = null;
+      this.deployOrUpdate = null;
+      conf = new PluginConf(PluginConf.Action.UPLOAD);
     }
-    LOGGER.info("DATA: { artifacts="+artifact+"; app="+app+"; ver="+ver+"; metadata="+metadata+"; deployOrUpdate="+ deployOrUpdate +" }");
   }
 
   @Override
   public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException,
       InterruptedException {
-
     EnvVars envVars = build.getEnvironment(listener);
-    String artifact = envVars.expand(this.artifact);
-    String metadata = envVars.expand(this.metadata);
-    String app = envVars.expand(this.app);
-    String ver = envVars.expand(this.ver);
-    if (deployOrUpdate != null)
-      deployOrUpdate.setContextPathWithEnvVarReplaced(envVars.expand(deployOrUpdate.contextPath));
-
-    FilePath deployableFile;
-    FilePath metadataFilePath = null;
-    if (build.getWorkspace().isRemote()) {
-      new ArtifactArchiver(artifact, "", true).perform(build, launcher, listener);
-      deployableFile = new FilePath(build.getArtifactsDir()).child(artifact);
-      if (metadata != null)
-        metadataFilePath = new FilePath(build.getArtifactsDir()).child(metadata);
-    }
-    else {
-      deployableFile = build.getWorkspace().child(artifact);
-      if (metadata != null)
-        metadataFilePath = build.getWorkspace().child(metadata);
-    }
-
-    if (!deployableFile.exists()) {
-      listener.getLogger().println("Could not find the artifact to deploy. Please, specify it in job configuration.");
-      return false;
-    }
-
-    if (metadataFilePath != null) {
-      if (!metadataFilePath.exists()) {
-        listener.getLogger().println("Could not find the metadata file "+metadataFilePath.getRemote());
-        return false;
-      }
+    switch (conf.getAction()) {
+      case UPLOAD:
+        conf.deployable = getArtificatOrMetadata(envVars.expand(upload.artifact), build, launcher, listener);
+        conf.metadata = getArtificatOrMetadata(envVars.expand(upload.metadata), build, launcher, listener);
+        if (upload.isOverride) {
+          conf.isOverride = true;
+          conf.overrideApp = envVars.expand(upload.app);
+          conf.overrideVer = envVars.expand(upload.ver);
+        }
+        break;
+      case DEPLOY_OR_UPDATE:
+        conf.deployable = getArtificatOrMetadata(envVars.expand(deployOrUpdate.artifact), build, launcher, listener);
+        conf.metadata = getArtificatOrMetadata(envVars.expand(deployOrUpdate.metadata), build, launcher, listener);
+        conf.updateStrategies = deployOrUpdate.updateStrategies == null ? getDefaultUpdateStrategies() : deployOrUpdate.updateStrategies;
+        if (deployOrUpdate.isOverride) {
+          conf.isOverride = true;
+          conf.overrideApp = envVars.expand(deployOrUpdate.app);
+          conf.overrideVer = envVars.expand(deployOrUpdate.ver);
+        }
+        conf.serverIds = getDeployableServers();
+        conf.contextPath = envVars.expand(deployOrUpdate.contextPath);
+        break;
+      case UNDEPLOY:
+        conf.undeployId = envVars.expand(undeploy.undeployID);
+        conf.serverIds = getDeployableServers();
+        break;
     }
 
     CommandCenterFactory commandCenterFactory = getCommandCenterFactory();
-    PluginUtil pluginUtil = new PluginUtil(commandCenterFactory, (PluginLogger)new JenkinsLogger(listener));
+    PluginUtil pluginUtil = new PluginUtil(commandCenterFactory, new JenkinsLogger(listener));
 
-    File metadataFile = null;
-    if (metadataFilePath != null)
-      metadataFile = new File(metadataFilePath.getRemote());
-
-    String contextPath = "";
-    UpdateStrategies updateStrategies = null;
-    if (deployOrUpdate != null) {
-      contextPath = deployOrUpdate.getContextPathWithEnv();
-      updateStrategies = deployOrUpdate.updateStrategies;
-    }
-
-    String undeployId = null;
-    if (this.undeploy != null) {
-      undeployId = PluginUtil.XML;
-    }
-    if (!pluginUtil.perform(new File(deployableFile.getRemote()), metadataFile, contextPath, undeployId, updateStrategies, getDeployableServers(), app, ver))
+    if (pluginUtil.perform(conf) != PluginUtil.PluginActionResult.SUCCESS)
       build.setResult(Result.FAILURE);
     return true;
+  }
+
+  private UpdateStrategies getDefaultUpdateStrategies() {
+    UpdateStrategiesImpl updateStrategies = new UpdateStrategiesImpl(new LiveRebelDefault());
+    updateStrategies.updateWithWarnings = false;
+    updateStrategies.requestPauseTimeout = 30;
+    updateStrategies.sessionDrainTimeout = 3600;
+    return updateStrategies;
+  }
+
+  private File getArtificatOrMetadata(String artifact, AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException {
+    FilePath deployableFile;
+    if (artifact == null)
+      return null;
+    if (build.getWorkspace().isRemote()) {
+      new ArtifactArchiver(artifact, "", true).perform(build, launcher, listener);
+      deployableFile = new FilePath(build.getArtifactsDir()).child(artifact);
+    }
+    else {
+      deployableFile = build.getWorkspace().child(artifact);
+    }
+    return new File(deployableFile.getRemote());
   }
 
   protected CommandCenterFactory getCommandCenterFactory() {
@@ -199,13 +176,13 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
   private List<String> getDeployableServers() {
     List<String> list = new ArrayList<String>();
-    if (currentAction.equals(Action.DEPLOYORUPDATE)) {
+    if (conf.getAction().equals(PluginConf.Action.DEPLOY_OR_UPDATE)) {
       if (deployOrUpdate != null && deployOrUpdate.servers != null) {
         for (ServerCheckbox server : deployOrUpdate.servers)
           if (server.isChecked() && !server.isGroup() && server.isConnected())
             list.add(server.getId());
       }
-    } else if (currentAction.equals(Action.UNDEPLOY)) {
+    } else if (conf.getAction().equals(PluginConf.Action.UNDEPLOY)) {
       if (undeploy != null && undeploy.servers != null) {
         for (ServerCheckbox server : undeploy.servers)
           if (server.isChecked() && !server.isGroup() && server.isConnected())
@@ -238,11 +215,6 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
     public static String getLrUrl() {
       return staticLrUrl;
-    }
-
-    public boolean isMetadataSupported() {
-      CommandCenter cc = newCommandCenter();
-      return cc != null && !cc.getVersion().equals("2.0");
     }
 
     public static CommandCenter newCommandCenter() {
@@ -332,54 +304,28 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       return super.configure(req, formData);
     }
 
-    public FormValidation doCheckArtifact(@AncestorInPath AbstractProject project, @QueryParameter String value)
-        throws IOException, ServletException {
-
-      if (StringUtils.trimToNull(value) == null || value.length() == 0) {
-        return FormValidation.error("Please provide an artifact.");
-      } else  if (value.contains(",")) {
-        return FormValidation.error("Please provide only one artifact.");
-      }
-      else {
-        return FilePath.validateFileMask(project.getSomeWorkspace(), value);
-      }
-    }
-
-    public FormValidation doCheckMetadata(@AncestorInPath AbstractProject project, @QueryParameter String value)
-      throws IOException, ServletException {
-
-      if (StringUtils.trimToNull(value) != null) {
-        if (value.contains(",")) {
-          return FormValidation.error("Please provide only one metadata file.");
-        }
-        String fileExtension = null;
-        try {
-          fileExtension = value.substring(value.lastIndexOf('.') + 1);
-        }
-        catch (Exception e) {
-          return FormValidation.error("Metadata must be a text file!");
-        }
-
-        if (!fileExtension.equals("txt"))
-          return FormValidation.error("Metadata must be a text file!");
-        return FilePath.validateFileMask(project.getSomeWorkspace(), value);
-      }
-      else {
-        return FormValidation.ok();
-      }
+    public DescriptorExtensionList<ActionWrapper,Descriptor<ActionWrapper>> getActions() {
+      return Hudson.getInstance().getDescriptorList(ActionWrapper.class);
     }
   }
 
-  public static final class ActionWrapper {
-    public final DeployOrUpdate deployOrUpdate;
-    public final Undeploy undeploy;
-    public final Action value;
+  public static class ActionWrapper implements Describable<ActionWrapper> {
 
-    @DataBoundConstructor
-    public ActionWrapper(DeployOrUpdate deployOrUpdate, String value, Undeploy undeploy) {
-      this.undeploy = undeploy;
-      this.deployOrUpdate = deployOrUpdate;
-      this.value = Action.valueOf(value);
+    public Descriptor<ActionWrapper> getDescriptor() {
+      return Hudson.getInstance().getDescriptor(getClass());
+    }
+
+    public static class ActionWrapperDescriptor extends Descriptor<ActionWrapper> {
+      public ActionWrapperDescriptor(Class<? extends ActionWrapper> clazz) {
+        super(clazz);
+      }
+      public String getDisplayName() {
+        try {
+          return clazz.newInstance().toString();
+        } catch (InstantiationException ignored) {}
+        catch (IllegalAccessException ignored) {}
+        return clazz.getSimpleName(); //fallback to class name
+      }
     }
   }
 

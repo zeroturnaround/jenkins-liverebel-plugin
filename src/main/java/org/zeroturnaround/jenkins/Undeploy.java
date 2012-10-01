@@ -11,15 +11,20 @@ import java.util.List;
 import java.util.UUID;
 
 
+import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverCheckBoxToServer;
 import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverToServerCheckBox;
 
-public class Undeploy implements Describable<Undeploy> {
+public class Undeploy extends LiveRebelDeployBuilder.ActionWrapper {
 
   public final List<ServerCheckbox> servers;
+  public final String undeployID;
 
   @DataBoundConstructor
-  public Undeploy(List<ServerCheckbox> servers) {this.servers = servers;}
+  public Undeploy(List<ServerCheckbox> servers, String undeployID) {
+    this.servers = servers;
+    this.undeployID = trimToNull(undeployID);
+  }
 
   public List<ServerCheckbox> getServers() {
     return serverToServerCheckBox(new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), serverCheckBoxToServer(servers)).getServers());
@@ -35,7 +40,7 @@ public class Undeploy implements Describable<Undeploy> {
   }
 
   @Extension
-  public static class DescriptorImpl extends Descriptor<Undeploy> {
+  public static class DescriptorImpl extends Descriptor<LiveRebelDeployBuilder.ActionWrapper> {
 
     @Override
     public String getDisplayName() {

@@ -1,5 +1,5 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
 
   <f:entry title="Artifact" field="artifact">
     <f:textbox/>
@@ -25,20 +25,5 @@
       <f:textbox/>
     </f:entry>
   </j:if>
-
-  <f:entry title="Context path" field="contextPath">
-    <f:textbox/>
-  </f:entry>
-
-  <f:entry title="Servers">
-    <div id="lr-deployOrUpdate-servers-${descriptor.getUniqueId()}" class="lr-deployOrUpdate-servers">
-      <f:repeatableProperty field="servers" noAddButton="true" default="${descriptor.getDefaultServers()}"/>
-    </div>
-  </f:entry>
-
-
-    <f:optionalProperty field="updateStrategies"  title="Show advanced Update settings" />
-
-
 
 </j:jelly>

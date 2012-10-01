@@ -1,0 +1,11 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:entry field="sessionDrain">
+    <div class="secondLevel">
+      <label>Session drain timeout</label>
+      <f:textbox name="sessionDrain" default="30" clazz="positive-number" value="${instance.sessionDrain}"/>
+      seconds
+    </div>
+  </f:entry>
+</j:jelly>

@@ -25,47 +25,22 @@
       }
     </style>
   </st:once>
+  <f:dropdownDescriptorSelector title="Choose your action" field="action" descriptors="${descriptor.actions}" />
+  <!--<f:nested>-->
+    <!--<table style="margin-left: -3px;width: 450px;">-->
+      <!--<f:radioBlock name="actionWrapper" value="UPLOAD" title="Distribute artifact to LiveRebel"-->
+                    <!--checked="${instance.distributeChecked}"/>-->
+        <!--<f:property field="upload"/>-->
+      <!--<f:radioBlock name="actionWrapper" value="DEPLOYORUPDATE" title="Deploy or update artifact"-->
+                    <!--checked="${instance.deployOrUpdateChecked}">-->
+        <!--<f:property field="deployOrUpdate"/>-->
+      <!--</f:radioBlock>-->
+      <!--<f:radioBlock name="actionWrapper" value="UNDEPLOY" title="Undeploy artifact"-->
+                    <!--checked="${instance.undeployChecked}">-->
+        <!--<f:property field="undeploy"/>-->
+      <!--</f:radioBlock>-->
 
-
-  <f:entry title="Artifact" field="artifact">
-    <f:textbox/>
-  </f:entry>
-
-  <f:nested>
-    <table style="margin-left: -3px; width: 340px;">
-      <f:optionalBlock name="overrideForm" title="Override the version information in the artifact" checked="${instance.isOverride}">
-
-        <f:entry title="Application Name" field="app">
-          <f:textbox name="app" value="${instance.app}"/>
-        </f:entry>
-        <f:entry title="Application Version" field="ver">
-          <f:textbox value="${instance.ver}"/>
-        </f:entry>
-
-      </f:optionalBlock>
-    </table>
-  </f:nested>
-
-  <j:if test="${descriptor.isMetadataSupported()}">
-    <f:entry title="Metadata" field="metadata">
-      <f:textbox/>
-    </f:entry>
-  </j:if>
-
-  <f:nested>
-    <table style="margin-left: -3px;width: 450px;">
-      <f:radioBlock name="actionWrapper" value="DISTRIBUTE" title="Distribute artifact to LiveRebel"
-                    checked="${instance.distributeChecked}"/>
-      <f:radioBlock name="actionWrapper" value="DEPLOYORUPDATE" title="Deploy or update artifact"
-                    checked="${instance.deployOrUpdateChecked}">
-        <f:property field="deployOrUpdate"/>
-      </f:radioBlock>
-      <f:radioBlock name="actionWrapper" value="UNDEPLOY" title="Undeploy artifact"
-                    checked="${instance.undeployChecked}">
-        <f:property field="undeploy"/>
-      </f:radioBlock>
-
-    </table>
-  </f:nested>
+    <!--</table>-->
+  <!--</f:nested>-->
 
 </j:jelly>

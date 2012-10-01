@@ -1,0 +1,21 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:entry field="updateWithWarnings">
+    <div class="secondLevel">
+      <f:checkbox name="updateWithWarnings" title="Update if compatible with warnings"
+                  checked="${instance.useFallbackIfCompatibleWithWarnings}"/>
+    </div>
+  </f:entry>
+
+  <f:entry field="requestPause">
+    <div class="secondLevel">
+      <label>Request pause timeout</label>
+      <f:textbox name="requestPause" default="30" clazz="positive-number" value="${instance.requestPause}"/>
+      seconds
+    </div>
+  </f:entry>
+
+  <f:dropdownDescriptorSelector title="Choose Fallback" field="fallback" default="${descriptor.getDefaultFallbackUpdate()}" descriptors="${descriptor.fallbackUpdateModes}" />
+
+</j:jelly>

@@ -1,6 +1,16 @@
 ********************************************
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
+
+2.5 (2nd of Oct 2012)
+* Upgraded for LiveRebel 2.5
+* Added support for Server Groups
+* Added support for Artifact Metadata
+* Added support for overriding LiveRebel XML
+* New action to undeploy
+* Simplified UI to easily choose between actions
+* Allow users to fine tune update settings if wanted
+
 1.0.3 (24th of May 2012)
 * Fixed an issue with configuration persistance
 

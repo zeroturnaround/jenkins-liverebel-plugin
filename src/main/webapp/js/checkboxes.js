@@ -60,9 +60,7 @@ function hideChildGroups(divName){
 }
 
 function toggleDependentCheckboxes(clickedElement) {
-  console.log(clickedElement);
   var elems = document.getElementById(clickedElement.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.id).getElementsByTagName('*');
-  console.log(elems);
   toggleUpward(clickedElement.parentNode, elems);
   toggleDownward(clickedElement, elems);
 }

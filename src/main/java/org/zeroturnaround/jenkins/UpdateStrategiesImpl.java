@@ -15,6 +15,7 @@ import org.zeroturnaround.jenkins.updateModes.FullRestart;
 import org.zeroturnaround.jenkins.updateModes.Hotpatch;
 import org.zeroturnaround.jenkins.updateModes.LiveRebelDefault;
 import org.zeroturnaround.jenkins.updateModes.RollingRestarts;
+import org.zeroturnaround.liverebel.plugins.PluginUtil;
 import org.zeroturnaround.liverebel.plugins.UpdateMode;
 import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
 
@@ -33,13 +34,13 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
     if (updateMode instanceof RollingRestarts) {
       primary = UpdateMode.ROLLING_RESTARTS;
       sessionDrainTimeout = ((RollingRestarts) updateMode).sessionDrain;
-      if (sessionDrainTimeout == 0) sessionDrainTimeout = 3600;
+      if (sessionDrainTimeout == 0) sessionDrainTimeout = PluginUtil.DEFAULT_SESSION_DRAIN;
     } else if (updateMode instanceof Hotpatch) {
       primary = UpdateMode.HOTPATCH;
       fallback = getFallback(((Hotpatch) updateMode).fallback);
       updateWithWarnings = ((Hotpatch) updateMode).updateWithWarnings;
       requestPauseTimeout = ((Hotpatch) updateMode).requestPause;
-      if (requestPauseTimeout == 0) requestPauseTimeout = 30;
+      if (requestPauseTimeout == 0) requestPauseTimeout = PluginUtil.DEFAULT_REQUEST_PAUSE;
     }  else if (updateMode instanceof FullRestart) {
       primary = UpdateMode.OFFLINE;
     } else {
@@ -48,8 +49,10 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
   }
 
   private UpdateMode getFallback(org.zeroturnaround.jenkins.updateModes.UpdateMode updateMode) {
-    if (updateMode instanceof RollingRestarts)
+    if (updateMode instanceof RollingRestarts) {
+      this.sessionDrainTimeout = ((RollingRestarts) updateMode).sessionDrain;
       return UpdateMode.ROLLING_RESTARTS;
+    }
     else if (updateMode instanceof FullRestart)
       return UpdateMode.OFFLINE;
     else if (updateMode instanceof FailBuild)

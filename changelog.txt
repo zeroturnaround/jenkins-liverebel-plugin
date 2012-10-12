@@ -1,6 +1,10 @@
 ********************************************
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
+2.5.1 (12nd of Oct 2012)
+* Bumped liverebel-plugin-util version, that had 2 bugfixes
+* Improved timeout default value handling
+* Added option to configure connection pause timeout for Full restart update
 
 2.5 (2nd of Oct 2012)
 * Upgraded for LiveRebel 2.5

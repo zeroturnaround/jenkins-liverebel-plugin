@@ -1,4 +1,4 @@
-
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
@@ -43,7 +43,7 @@
     </developer>
     <developer>
       <id>poolik</id>
-      <name>Tõnis Pool</name>
+      <name>Tonis Pool</name>
     </developer>
   </developers>
 
@@ -219,7 +219,7 @@
     <dependency>
       <groupId>org.zeroturnaround</groupId>
       <artifactId>liverebel-plugin-util</artifactId>
-      <version>1.0.2</version>
+      <version>1.0.4</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -228,7 +228,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-			<!-- for JRE requirement check annotation -->
+			<!-- for JRE reRestarting quirement check annotation -->
       <groupId>org.jvnet</groupId>
       <artifactId>animal-sniffer-annotation</artifactId>
       <version>1.0</version>

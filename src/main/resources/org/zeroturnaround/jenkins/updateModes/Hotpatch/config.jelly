@@ -8,7 +8,7 @@
     </div>
   </f:entry>
 
-  <f:entry field="requestPause">
+  <f:entry field="requestPause" help="/plugin/liverebel-deploy/help-requestPause.html">
     <div class="secondLevel">
       <label>Request pause timeout</label>
       <f:textbox name="requestPause" default="30" clazz="positive-number" value="${instance.requestPause}"/>

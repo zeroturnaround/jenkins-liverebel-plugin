@@ -1,7 +1,7 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-  <f:entry title="Artifact" field="artifact">
+  <f:entry title="Artifact" field="artifact" help="/plugin/liverebel-deploy/help-artifact.html">
     <f:textbox/>
   </f:entry>
 
@@ -9,10 +9,10 @@
     <table style="margin-left: -3px; width: 340px;">
       <f:optionalBlock name="overrideForm" title="Override the version information in the artifact" checked="${instance.isOverride}">
 
-        <f:entry title="Application Name" field="app">
+        <f:entry title="Application Name" field="app" help="/plugin/liverebel-deploy/help-app.html">
           <f:textbox name="app" value="${instance.app}"/>
         </f:entry>
-        <f:entry title="Application Version" field="ver">
+        <f:entry title="Application Version" field="ver" help="/plugin/liverebel-deploy/help-ver.html">
           <f:textbox value="${instance.ver}"/>
         </f:entry>
 
@@ -21,7 +21,7 @@
   </f:nested>
 
   <j:if test="${descriptor.isMetadataSupported()}">
-    <f:entry title="Metadata" field="metadata">
+    <f:entry title="Metadata" field="metadata" help="/plugin/liverebel-deploy/help-metadata.html">
       <f:textbox/>
     </f:entry>
   </j:if>
@@ -36,9 +36,6 @@
     </div>
   </f:entry>
 
-
-    <f:optionalProperty field="updateStrategies"  title="Show advanced Update settings" />
-
-
+  <f:optionalProperty field="updateStrategies"  title="Show advanced Update settings" />
 
 </j:jelly>

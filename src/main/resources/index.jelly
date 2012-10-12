@@ -2,5 +2,5 @@
   This view is used to render the installed plugins page.
 -->
 <div>
-  Deploy or update your artifact with LiveRebel.
+  Deploy, update or undeploy your artifact with LiveRebel.
 </div>

@@ -34,18 +34,19 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
     if (updateMode instanceof RollingRestarts) {
       primary = UpdateMode.ROLLING_RESTARTS;
       sessionDrainTimeout = ((RollingRestarts) updateMode).sessionDrain;
-      if (sessionDrainTimeout == 0) sessionDrainTimeout = PluginUtil.DEFAULT_SESSION_DRAIN;
     } else if (updateMode instanceof Hotpatch) {
       primary = UpdateMode.HOTPATCH;
       fallback = getFallback(((Hotpatch) updateMode).fallback);
       updateWithWarnings = ((Hotpatch) updateMode).updateWithWarnings;
       requestPauseTimeout = ((Hotpatch) updateMode).requestPause;
-      if (requestPauseTimeout == 0) requestPauseTimeout = PluginUtil.DEFAULT_REQUEST_PAUSE;
     }  else if (updateMode instanceof FullRestart) {
       primary = UpdateMode.OFFLINE;
+      requestPauseTimeout = ((FullRestart) updateMode).connectionPause;
     } else {
       primary = UpdateMode.LIVEREBEL_DEFAULT;
     }
+    if (requestPauseTimeout == 0) requestPauseTimeout = PluginUtil.DEFAULT_REQUEST_PAUSE;
+    if (sessionDrainTimeout == 0) sessionDrainTimeout = PluginUtil.DEFAULT_SESSION_DRAIN;
   }
 
   private UpdateMode getFallback(org.zeroturnaround.jenkins.updateModes.UpdateMode updateMode) {

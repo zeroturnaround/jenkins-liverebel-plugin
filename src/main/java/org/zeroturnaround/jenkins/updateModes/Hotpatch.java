@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.zeroturnaround.liverebel.plugins.PluginUtil;
 
 import hudson.DescriptorExtensionList;
 import hudson.Extension;
@@ -19,7 +20,7 @@ public class Hotpatch extends UpdateMode{
   public Hotpatch() {
     this.fallback = null;
     updateWithWarnings = false;
-    requestPause = 0;
+    requestPause = PluginUtil.DEFAULT_REQUEST_PAUSE;
   }
   @DataBoundConstructor
   public Hotpatch(boolean updateWithWarnings, int requestPause, UpdateMode fallback) {

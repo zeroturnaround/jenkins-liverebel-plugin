@@ -5,9 +5,9 @@
   <artifactId>liverebel-deploy</artifactId>
   <version>2.5.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
-  <name>LiveRebel Deploy Plugin</name>
-  <description>LiveRebel Deploy Plugin helps to run updates to your JEE containers faster. LiveRebel is tool for hot updates without downtime,
-		lost sessions and OutOfMemoryErrors. You have to have runing LiveRebel installed to use this plugin.
+  <name>LiveRebel Plugin</name>
+  <description>LiveRebel Plugin helps to run updates to your JEE containers faster. LiveRebel is a tool for hot updates without downtime,
+		lost sessions and OutOfMemoryErrors. You have to have a running LiveRebel Command Center to use this plugin.
   </description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/LiveRebel+Deploy+Plugin</url>
 

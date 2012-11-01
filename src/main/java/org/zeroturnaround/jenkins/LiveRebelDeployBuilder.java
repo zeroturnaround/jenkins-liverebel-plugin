@@ -242,6 +242,12 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       return null;
     }
 
+    public FormValidation doCheckTestConnection() throws IOException, ServletException {
+      FormValidation validation = doTestConnection(getAuthToken(), getLrUrl(), true);
+      if (validation.kind != FormValidation.Kind.OK) return validation;
+      return FormValidation.ok();
+    }
+
     public FormValidation doCheckLrUrl(@QueryParameter("lrUrl") final String value) throws IOException,
         ServletException {
       if (value != null && value.length() > 0) {
@@ -264,12 +270,13 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     }
 
     public FormValidation doTestConnection(@QueryParameter("authToken") final String authToken,
-        @QueryParameter("lrUrl") final String lrUrl) throws IOException, ServletException {
+        @QueryParameter("lrUrl") final String lrUrl, boolean isJobConfView) throws IOException, ServletException {
       try {
         new CommandCenterFactory().setUrl(lrUrl).setVerbose(false).authenticate(authToken).newCommandCenter();
         return FormValidation.ok("Success");
       }
       catch (Forbidden e) {
+        if (isJobConfView) return FormValidation.error("Please navigate to Jenkins Configuration to specify LiveRebel Authentication Token!");
         return FormValidation.error("Please, provide right authentication token!");
       }
       catch (ConnectException e) {

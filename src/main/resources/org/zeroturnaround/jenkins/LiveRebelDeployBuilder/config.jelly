@@ -18,6 +18,12 @@
       }
     </style>
   </st:once>
+    <f:entry field="testConnection">
+      <div style="display: none;">
+        <f:textbox/>
+      </div>
+    </f:entry>
+
   <f:dropdownDescriptorSelector title="Choose your action" field="action" descriptors="${descriptor.actions}" />
 
 </j:jelly>

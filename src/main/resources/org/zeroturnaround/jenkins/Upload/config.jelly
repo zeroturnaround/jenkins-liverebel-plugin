@@ -21,7 +21,7 @@
   </f:nested>
 
   <j:if test="${descriptor.isMetadataSupported()}">
-    <f:entry title="Metadata" field="metadata" help="/plugin/liverebel-deploy/help-metadata.html">
+    <f:entry title="Trace file" field="trace" help="/plugin/liverebel-deploy/help-trace.html">
       <f:textbox/>
     </f:entry>
   </j:if>

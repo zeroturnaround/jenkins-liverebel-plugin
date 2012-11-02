@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -53,12 +52,9 @@ import com.zeroturnaround.liverebel.api.CommandCenter;
 import com.zeroturnaround.liverebel.api.CommandCenterFactory;
 import com.zeroturnaround.liverebel.api.ConnectException;
 import com.zeroturnaround.liverebel.api.Forbidden;
-import org.zeroturnaround.jenkins.updateModes.FailBuild;
 import org.zeroturnaround.jenkins.updateModes.LiveRebelDefault;
-import org.zeroturnaround.jenkins.updateModes.UpdateMode;
 import org.zeroturnaround.jenkins.util.JenkinsLogger;
 import org.zeroturnaround.liverebel.plugins.PluginConf;
-import org.zeroturnaround.liverebel.plugins.PluginLogger;
 import org.zeroturnaround.liverebel.plugins.PluginUtil;
 import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
 
@@ -108,29 +104,13 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     EnvVars envVars = build.getEnvironment(listener);
     switch (conf.getAction()) {
       case UPLOAD:
-        conf.deployable = getArtificatOrMetadata(envVars.expand(upload.artifact), build, launcher, listener);
-        conf.metadata = getArtificatOrMetadata(envVars.expand(upload.metadata), build, launcher, listener);
-        if (upload.isOverride) {
-          conf.isOverride = true;
-          conf.overrideApp = envVars.expand(upload.app);
-          conf.overrideVer = envVars.expand(upload.ver);
-        }
+        uploadConfiguration(build, launcher, listener, envVars);
         break;
       case DEPLOY_OR_UPDATE:
-        conf.deployable = getArtificatOrMetadata(envVars.expand(deployOrUpdate.artifact), build, launcher, listener);
-        conf.metadata = getArtificatOrMetadata(envVars.expand(deployOrUpdate.metadata), build, launcher, listener);
-        conf.updateStrategies = deployOrUpdate.updateStrategies == null ? getDefaultUpdateStrategies() : deployOrUpdate.updateStrategies;
-        if (deployOrUpdate.isOverride) {
-          conf.isOverride = true;
-          conf.overrideApp = envVars.expand(deployOrUpdate.app);
-          conf.overrideVer = envVars.expand(deployOrUpdate.ver);
-        }
-        conf.serverIds = getDeployableServers();
-        conf.contextPath = envVars.expand(deployOrUpdate.contextPath);
+        deployOrUpdateConfiguration(build, launcher, listener, envVars);
         break;
       case UNDEPLOY:
-        conf.undeployId = envVars.expand(undeploy.undeployID);
-        conf.serverIds = getDeployableServers();
+        undeployConfiguration(envVars);
         break;
     }
 
@@ -140,6 +120,34 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     if (pluginUtil.perform(conf) != PluginUtil.PluginActionResult.SUCCESS)
       build.setResult(Result.FAILURE);
     return true;
+  }
+
+  private void undeployConfiguration(EnvVars envVars) {
+    conf.undeployId = envVars.expand(undeploy.undeployID);
+    conf.serverIds = getDeployableServers();
+  }
+
+  private void deployOrUpdateConfiguration(AbstractBuild build, Launcher launcher, BuildListener listener, EnvVars envVars) throws InterruptedException {
+    conf.deployable = getArtificatOrMetadata(envVars.expand(deployOrUpdate.artifact), build, launcher, listener);
+    conf.metadata = getArtificatOrMetadata(envVars.expand(deployOrUpdate.trace), build, launcher, listener);
+    conf.updateStrategies = deployOrUpdate.updateStrategies == null ? getDefaultUpdateStrategies() : deployOrUpdate.updateStrategies;
+    if (deployOrUpdate.isOverride) {
+      conf.isOverride = true;
+      conf.overrideApp = envVars.expand(deployOrUpdate.app);
+      conf.overrideVer = envVars.expand(deployOrUpdate.ver);
+    }
+    conf.serverIds = getDeployableServers();
+    conf.contextPath = envVars.expand(deployOrUpdate.contextPath);
+  }
+
+  private void uploadConfiguration(AbstractBuild build, Launcher launcher, BuildListener listener, EnvVars envVars) throws InterruptedException {
+    conf.deployable = getArtificatOrMetadata(envVars.expand(upload.artifact), build, launcher, listener);
+    conf.metadata = getArtificatOrMetadata(envVars.expand(upload.trace), build, launcher, listener);
+    if (upload.isOverride) {
+      conf.isOverride = true;
+      conf.overrideApp = envVars.expand(upload.app);
+      conf.overrideVer = envVars.expand(upload.ver);
+    }
   }
 
   private UpdateStrategies getDefaultUpdateStrategies() {

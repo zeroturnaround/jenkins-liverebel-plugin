@@ -1,6 +1,12 @@
 ********************************************
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
+2.5.2 (2nd of Nov 2012)
+* Fail gracefully when no liverebel.xml is found from archive
+* Better handling and displaying authentication token misconfiguration
+* Servers are now logged with their names not id-s (better readability)
+* Renamed plugin to "LiveRebel plugin"
+
 2.5.1 (12nd of Oct 2012)
 * Bumped liverebel-plugin-util version, that had 2 bugfixes
 * Improved timeout default value handling

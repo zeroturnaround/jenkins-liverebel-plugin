@@ -4,7 +4,7 @@
   <f:entry field="sessionDrain" help="/plugin/liverebel-deploy/help-sessionDrain.html">
     <div class="secondLevel">
       <label>Session drain timeout</label>
-      <f:textbox name="sessionDrain" default="30" clazz="positive-number" value="${instance.sessionDrain}"/>
+      <f:textbox name="sessionDrain" default="3600" clazz="positive-number" value="${instance.sessionDrain}"/>
       seconds
     </div>
   </f:entry>

@@ -270,7 +270,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     }
 
     public FormValidation doTestConnection(@QueryParameter("authToken") final String authToken,
-        @QueryParameter("lrUrl") final String lrUrl, boolean isJobConfView) throws IOException, ServletException {
+        @QueryParameter("lrUrl") final String lrUrl, @QueryParameter boolean isJobConfView) throws IOException, ServletException {
       try {
         new CommandCenterFactory().setUrl(lrUrl).setVerbose(false).authenticate(authToken).newCommandCenter();
         return FormValidation.ok("Success");

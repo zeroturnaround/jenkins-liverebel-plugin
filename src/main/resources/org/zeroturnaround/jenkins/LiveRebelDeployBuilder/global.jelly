@@ -13,7 +13,7 @@
 		         help="/plugin/liverebel-deploy/help-authToken.html" >
 			<f:textbox name="authToken" value="${descriptor.getAuthToken()}" field="authToken" />
 		</f:entry>
-		<f:entry title="LiveRebel Url" description="URL of running LiveRebel" field="lrUrl">
+		<f:entry title="LiveRebel URL" description="URL of running LiveRebel" field="lrUrl">
 			<f:textbox default="https://localhost:9001" />
 		</f:entry>
 		<f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="authToken,lrUrl" />

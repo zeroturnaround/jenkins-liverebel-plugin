@@ -1,10 +1,8 @@
 package org.zeroturnaround.jenkins;
 
 import hudson.Extension;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
 import hudson.model.Hudson;
-import org.apache.commons.lang.StringUtils;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.zeroturnaround.jenkins.util.ArtifactAndMetadataDescriptor;
 import org.zeroturnaround.liverebel.plugins.ServersUtil;
@@ -22,7 +20,7 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
   public final String artifact;
   public final String app;
   public final String ver;
-  public final String metadata;
+  public final String trace;
   private String contextPathWithEnvVarReplaced;
 
   public final UpdateStrategiesImpl updateStrategies;
@@ -30,9 +28,9 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
   public final boolean isOverride;
 
   @DataBoundConstructor
-  public DeployOrUpdate(String contextPath, String artifact, String metadata, UpdateStrategiesImpl updateStrategies, List<ServerCheckbox> servers, OverrideForm overrideForm) {
+  public DeployOrUpdate(String contextPath, String artifact, String trace, UpdateStrategiesImpl updateStrategies, List<ServerCheckbox> servers, OverrideForm overrideForm) {
     this.artifact = trimToNull(artifact);
-    this.metadata = trimToNull(metadata);
+    this.trace = trimToNull(trace);
     this.contextPath = trimToNull(contextPath);
     this.updateStrategies = updateStrategies;
     this.servers = servers;

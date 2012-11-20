@@ -1,14 +1,17 @@
 package org.zeroturnaround.jenkins;
 
-import hudson.Extension;
-import hudson.model.Hudson;
-
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
+import javax.servlet.ServletException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.zeroturnaround.jenkins.util.ArtifactAndMetadataDescriptor;
 import org.zeroturnaround.liverebel.plugins.ServersUtil;
+import com.zeroturnaround.liverebel.api.Forbidden;
 
-import java.util.List;
-import java.util.UUID;
+import hudson.Extension;
+import hudson.model.Hudson;
+import hudson.util.FormValidation;
 
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverCheckBoxToServer;
@@ -89,6 +92,18 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
 
     public String getUniqueId() {
       return UUID.randomUUID().toString();
+    }
+
+    public FormValidation doCheckTestServers() throws IOException, ServletException {
+      try {
+        List<ServerCheckbox> availableServers = getDefaultServers();
+        if (availableServers.isEmpty()) return FormValidation.error("No connected servers!");
+      } catch (Forbidden e) {
+        if (e.getMessage().contains("MANAGE_GROUPS")) {
+          return FormValidation.error("User whose authentication token is used must have MANAGE_GROUPS permission!");
+        } else throw e;
+      }
+      return FormValidation.ok();
     }
   }
 

@@ -22,7 +22,7 @@
 
   <j:if test="${descriptor.isMetadataSupported()}">
     <f:entry title="Trace file" field="trace" help="/plugin/liverebel-deploy/help-trace.html">
-      <f:textbox/>
+      <f:textbox />
     </f:entry>
   </j:if>
 
@@ -30,7 +30,13 @@
     <f:textbox/>
   </f:entry>
 
-  <f:entry title="Servers">
+  <f:entry field="testServers">
+    <div style="display: none;">
+      <f:textbox/>
+    </div>
+  </f:entry>
+
+  <f:entry title="Servers" >
     <div id="lr-deployOrUpdate-servers-${descriptor.getUniqueId()}" class="lr-deployOrUpdate-servers">
       <f:repeatableProperty field="servers" noAddButton="true" default="${descriptor.getDefaultServers()}"/>
     </div>

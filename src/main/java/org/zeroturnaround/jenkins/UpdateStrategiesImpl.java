@@ -3,12 +3,6 @@ package org.zeroturnaround.jenkins;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import hudson.DescriptorExtensionList;
-import hudson.Extension;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.zeroturnaround.jenkins.updateModes.FailBuild;
 import org.zeroturnaround.jenkins.updateModes.FullRestart;
@@ -19,6 +13,12 @@ import org.zeroturnaround.liverebel.plugins.PluginUtil;
 import org.zeroturnaround.liverebel.plugins.UpdateMode;
 import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
 
+import hudson.DescriptorExtensionList;
+import hudson.Extension;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import hudson.model.Hudson;
+
 public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, UpdateStrategies {
 
   public final UpdateMode primary;
@@ -26,6 +26,7 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
   public boolean updateWithWarnings;
   public int sessionDrainTimeout;
   public int requestPauseTimeout;
+  public int connectionPauseTimeout;
   public final org.zeroturnaround.jenkins.updateModes.UpdateMode updateMode;
 
   @DataBoundConstructor
@@ -37,6 +38,11 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
     } else if (updateMode instanceof Hotpatch) {
       primary = UpdateMode.HOTPATCH;
       fallback = getFallback(((Hotpatch) updateMode).fallback);
+      if (fallback == UpdateMode.ROLLING_RESTARTS) {
+        sessionDrainTimeout = ((RollingRestarts)((Hotpatch) updateMode).fallback).sessionDrain;
+      } else if (fallback == UpdateMode.OFFLINE) {
+        connectionPauseTimeout = ((FullRestart)((Hotpatch) updateMode).fallback).connectionPause;
+      }
       updateWithWarnings = ((Hotpatch) updateMode).updateWithWarnings;
       requestPauseTimeout = ((Hotpatch) updateMode).requestPause;
     }  else if (updateMode instanceof FullRestart) {
@@ -81,6 +87,10 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
 
   public int getRequestPauseTimeout() {
     return requestPauseTimeout;
+  }
+
+  public int getConnectionPauseTimeout() {
+    return connectionPauseTimeout;
   }
 
   public DescriptorImpl getDescriptor() {

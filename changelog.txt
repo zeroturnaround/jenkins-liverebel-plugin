@@ -1,6 +1,15 @@
 ********************************************
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
+
+2.5.4 (21st of Nov 2012)
+* Added notifications also to undeploy task view
+* Warn if no online servers
+
+2.5.3 (21st of Nov 2012)
+* Better notification of missin permissions or no connected servers
+* Fixed fallback rolling restart or full restart configurations being ignored
+
 2.5.2 (2nd of Nov 2012)
 * Fail gracefully when no liverebel.xml is found from archive
 * Better handling and displaying authentication token misconfiguration

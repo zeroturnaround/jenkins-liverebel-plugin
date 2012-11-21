@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>liverebel-deploy</artifactId>
-  <version>2.5.3-SNAPSHOT</version>
+  <version>2.5.3</version>
   <packaging>hpi</packaging>
   <name>LiveRebel Plugin</name>
   <description>LiveRebel Plugin helps to run updates to your JEE containers faster. LiveRebel is a tool for hot updates without downtime,

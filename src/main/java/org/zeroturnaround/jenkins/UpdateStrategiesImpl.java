@@ -37,29 +37,36 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
       sessionDrainTimeout = ((RollingRestarts) updateMode).sessionDrain;
     } else if (updateMode instanceof Hotpatch) {
       primary = UpdateMode.HOTPATCH;
-      fallback = getFallback(((Hotpatch) updateMode).fallback);
-      if (fallback == UpdateMode.ROLLING_RESTARTS) {
-        sessionDrainTimeout = ((RollingRestarts)((Hotpatch) updateMode).fallback).sessionDrain;
-      } else if (fallback == UpdateMode.OFFLINE) {
-        connectionPauseTimeout = ((FullRestart)((Hotpatch) updateMode).fallback).connectionPause;
-      }
-      updateWithWarnings = ((Hotpatch) updateMode).updateWithWarnings;
-      requestPauseTimeout = ((Hotpatch) updateMode).requestPause;
+      setHotpatchConf((Hotpatch) updateMode);
     }  else if (updateMode instanceof FullRestart) {
       primary = UpdateMode.OFFLINE;
-      requestPauseTimeout = ((FullRestart) updateMode).connectionPause;
+      connectionPauseTimeout = ((FullRestart) updateMode).connectionPause;
     } else {
       primary = UpdateMode.LIVEREBEL_DEFAULT;
     }
+    checkAndSetDefaultTimeouts();
+  }
+
+  private void checkAndSetDefaultTimeouts() {
     if (requestPauseTimeout == 0) requestPauseTimeout = PluginUtil.DEFAULT_REQUEST_PAUSE;
+    if (connectionPauseTimeout == 0) connectionPauseTimeout = PluginUtil.DEFAULT_REQUEST_PAUSE;
     if (sessionDrainTimeout == 0) sessionDrainTimeout = PluginUtil.DEFAULT_SESSION_DRAIN;
   }
 
-  private UpdateMode getFallback(org.zeroturnaround.jenkins.updateModes.UpdateMode updateMode) {
-    if (updateMode instanceof RollingRestarts) {
-      this.sessionDrainTimeout = ((RollingRestarts) updateMode).sessionDrain;
-      return UpdateMode.ROLLING_RESTARTS;
+  private void setHotpatchConf(Hotpatch updateMode) {
+    fallback = getFallback(updateMode.fallback);
+    if (fallback == UpdateMode.ROLLING_RESTARTS) {
+      sessionDrainTimeout = ((RollingRestarts) updateMode.fallback).sessionDrain;
+    } else if (fallback == UpdateMode.OFFLINE) {
+      connectionPauseTimeout = ((FullRestart) updateMode.fallback).connectionPause;
     }
+    updateWithWarnings = updateMode.updateWithWarnings;
+    requestPauseTimeout = updateMode.requestPause;
+  }
+
+  private UpdateMode getFallback(org.zeroturnaround.jenkins.updateModes.UpdateMode updateMode) {
+    if (updateMode instanceof RollingRestarts)
+      return UpdateMode.ROLLING_RESTARTS;
     else if (updateMode instanceof FullRestart)
       return UpdateMode.OFFLINE;
     else if (updateMode instanceof FailBuild)
@@ -104,6 +111,7 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
     public String getDisplayName() {
       return "Update Strategies info";
     }
+
     public Descriptor<org.zeroturnaround.jenkins.updateModes.UpdateMode> getDefaultPrimaryUpdate() {
       DescriptorExtensionList<org.zeroturnaround.jenkins.updateModes.UpdateMode, Descriptor<org.zeroturnaround.jenkins.updateModes.UpdateMode>> allDescriptors = Hudson.getInstance().getDescriptorList(org.zeroturnaround.jenkins.updateModes.UpdateMode.class);
       Iterator<Descriptor<org.zeroturnaround.jenkins.updateModes.UpdateMode>> it = allDescriptors.iterator();
@@ -115,7 +123,6 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
       }
       return null;
     }
-
     public List<Descriptor<org.zeroturnaround.jenkins.updateModes.UpdateMode>> getPrimaryUpdateModes() {
       DescriptorExtensionList<org.zeroturnaround.jenkins.updateModes.UpdateMode, Descriptor<org.zeroturnaround.jenkins.updateModes.UpdateMode>> allDescriptors = Hudson.getInstance().getDescriptorList(org.zeroturnaround.jenkins.updateModes.UpdateMode.class);
       List<Descriptor<org.zeroturnaround.jenkins.updateModes.UpdateMode>> primaryUpdateModes = new ArrayList<Descriptor<org.zeroturnaround.jenkins.updateModes.UpdateMode>>();
@@ -130,5 +137,18 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
 
      return primaryUpdateModes;
     }
+
+  }
+  @Override
+  public String toString() {
+    return "UpdateStrategiesImpl{" +
+        "primary=" + primary +
+        ", fallback=" + fallback +
+        ", updateWithWarnings=" + updateWithWarnings +
+        ", sessionDrainTimeout=" + sessionDrainTimeout +
+        ", requestPauseTimeout=" + requestPauseTimeout +
+        ", connectionPauseTimeout=" + connectionPauseTimeout +
+        ", updateMode=" + updateMode +
+        '}';
   }
 }

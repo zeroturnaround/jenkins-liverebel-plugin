@@ -3,18 +3,17 @@
   <st:once>
     <script type="text/javascript" src="${rootURL}/plugin/liverebel-deploy/js/checkboxes.js"/>
     <style type="text/css">
-
       .firstLevel {
-      padding-left:20px;
+        padding-left:20px;
       }
       .secondLevel {
-      padding-left:40px;
+        padding-left:40px;
       }
       .secondLevel input[type="text"] {
-      width:40px;
+        width:40px;
       }
       .thirdLevel {
-      padding-left:60px;
+        padding-left:60px;
       }
     </style>
   </st:once>

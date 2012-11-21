@@ -98,6 +98,11 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
       try {
         List<ServerCheckbox> availableServers = getDefaultServers();
         if (availableServers.isEmpty()) return FormValidation.error("No connected servers!");
+        boolean anyOnline = false;
+        for (ServerCheckbox serverCheckbox : availableServers) {
+          if (serverCheckbox.isConnected()) anyOnline = true;
+        }
+        if (!anyOnline) return FormValidation.warning("No online servers!");
       } catch (Forbidden e) {
         if (e.getMessage().contains("MANAGE_GROUPS")) {
           return FormValidation.error("User whose authentication token is used must have MANAGE_GROUPS permission!");

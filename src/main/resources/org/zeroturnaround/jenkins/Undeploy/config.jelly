@@ -5,6 +5,12 @@
     <f:textbox/>
   </f:entry>
 
+  <f:entry field="testServers">
+    <div style="display: none;">
+      <f:textbox/>
+    </div>
+  </f:entry>
+
   <f:entry title="Servers">
     <div id="lr-undeploy-servers-${descriptor.getUniqueId()}" class="lr-undeploy-servers">
       <f:repeatableProperty field="servers" noAddButton="true" default="${descriptor.getDefaultServers()}"/>

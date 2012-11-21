@@ -15,6 +15,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  *****************************************************************/
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.servlet.ServletException;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.zeroturnaround.jenkins.updateModes.LiveRebelDefault;
+import org.zeroturnaround.jenkins.util.JenkinsLogger;
+import org.zeroturnaround.liverebel.plugins.PluginConf;
+import org.zeroturnaround.liverebel.plugins.PluginUtil;
+import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
+import com.zeroturnaround.liverebel.api.CommandCenter;
+import com.zeroturnaround.liverebel.api.CommandCenterFactory;
+import com.zeroturnaround.liverebel.api.ConnectException;
+import com.zeroturnaround.liverebel.api.Forbidden;
+
 import hudson.DescriptorExtensionList;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -31,32 +53,7 @@ import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import net.sf.json.JSONObject;
-
-import javax.servlet.ServletException;
-
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-
-import com.zeroturnaround.liverebel.api.CommandCenter;
-import com.zeroturnaround.liverebel.api.CommandCenterFactory;
-import com.zeroturnaround.liverebel.api.ConnectException;
-import com.zeroturnaround.liverebel.api.Forbidden;
-import org.zeroturnaround.jenkins.updateModes.LiveRebelDefault;
-import org.zeroturnaround.jenkins.util.JenkinsLogger;
-import org.zeroturnaround.liverebel.plugins.PluginConf;
-import org.zeroturnaround.liverebel.plugins.PluginUtil;
-import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
 
 public class LiveRebelDeployBuilder extends Builder implements Serializable {
 

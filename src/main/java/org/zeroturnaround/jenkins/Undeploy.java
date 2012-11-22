@@ -1,6 +1,7 @@
 package org.zeroturnaround.jenkins;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import javax.servlet.ServletException;
@@ -24,12 +25,12 @@ public class Undeploy extends LiveRebelDeployBuilder.ActionWrapper {
 
   @DataBoundConstructor
   public Undeploy(List<ServerCheckbox> servers, String undeployID) {
-    this.servers = servers;
+    this.servers = servers == null ? new ArrayList<ServerCheckbox>() : servers;
     this.undeployID = trimToNull(undeployID);
   }
 
   public List<ServerCheckbox> getServers() {
-    return serverToServerCheckBox(new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), serverCheckBoxToServer(servers)).getServers());
+    return serverToServerCheckBox(new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), serverCheckBoxToServer(servers == null ? new ArrayList<ServerCheckbox>() : servers)).getServers());
   }
 
   public DescriptorImpl getDescriptor() {

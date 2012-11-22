@@ -1,6 +1,7 @@
 package org.zeroturnaround.jenkins;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import javax.servlet.ServletException;
@@ -36,7 +37,7 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
     this.trace = trimToNull(trace);
     this.contextPath = trimToNull(contextPath);
     this.updateStrategies = updateStrategies;
-    this.servers = servers;
+    this.servers = servers == null ? new ArrayList<ServerCheckbox>() : servers;
     if (overrideForm != null) {
       this.app = trimToNull(overrideForm.getApp());
       this.ver = trimToNull(overrideForm.getVer());
@@ -71,7 +72,7 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
   }
 
   public List<ServerCheckbox> getServers() {
-    return serverToServerCheckBox(new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), serverCheckBoxToServer(servers)).getServers());
+    return serverToServerCheckBox(new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), serverCheckBoxToServer(servers == null ? new ArrayList<ServerCheckbox>() : servers)).getServers());
   }
 
   public DescriptorImpl getDescriptor() {

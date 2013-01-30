@@ -156,17 +156,38 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
   }
 
   private File getArtificatOrMetadata(String artifact, AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException {
-    FilePath deployableFile;
-    if (artifact == null)
+    if (artifact == null) {
       return null;
+    }
+    FilePath workspace;
     if (build.getWorkspace().isRemote()) {
       new ArtifactArchiver(artifact, "", true).perform(build, launcher, listener);
-      deployableFile = new FilePath(build.getArtifactsDir()).child(artifact);
+      workspace = new FilePath(build.getArtifactsDir());
     }
     else {
-      deployableFile = build.getWorkspace().child(artifact);
+      workspace = build.getWorkspace();
     }
-    return new File(deployableFile.getRemote());
+
+    FilePath deployableFile = matchArtifactToWorkspace(artifact, workspace);
+    return deployableFile == null ? null : new File(deployableFile.getRemote());
+  }
+
+  private FilePath matchArtifactToWorkspace(String artifact, FilePath workspace) throws InterruptedException {
+    try {
+      FilePath[] list = workspace.list(artifact);
+      if (list.length == 0) return null;
+      else if (list.length > 1) {
+        LOGGER.warning("Multiple archives matched for '" +  artifact + "', but LiveRebel plugin supports only one per build action!");
+        for (FilePath filePath : list) {
+          LOGGER.warning(filePath + " mathced");
+        }
+        LOGGER.warning("Using " + list[0] + " as the archive!");
+      }
+      return list[0];
+    } catch (IOException e) {
+      LOGGER.severe("Couldn't list artifacts, reason: " + e.getMessage());
+    }
+    return null;
   }
 
   protected CommandCenterFactory getCommandCenterFactory() {

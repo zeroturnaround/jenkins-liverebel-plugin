@@ -17,6 +17,7 @@ limitations under the License.
  *****************************************************************/
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
@@ -168,24 +169,25 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       workspace = build.getWorkspace();
     }
 
-    FilePath deployableFile = matchArtifactToWorkspace(artifact, workspace);
+    FilePath deployableFile = matchArtifactToWorkspace(artifact, workspace, listener.getLogger());
     return deployableFile == null ? null : new File(deployableFile.getRemote());
   }
 
-  private FilePath matchArtifactToWorkspace(String artifact, FilePath workspace) throws InterruptedException {
+  private FilePath matchArtifactToWorkspace(String artifact, FilePath workspace, PrintStream logger) throws InterruptedException {
     try {
       FilePath[] list = workspace.list(artifact);
       if (list.length == 0) return null;
       else if (list.length > 1) {
-        LOGGER.warning("Multiple archives matched for '" +  artifact + "', but LiveRebel plugin supports only one per build action!");
+        logger.println("WARNING! Multiple archives matched for '" +  artifact + "', but LiveRebel plugin supports only one per build action!");
         for (FilePath filePath : list) {
-          LOGGER.warning(filePath + " mathced");
+          logger.println(filePath + " mathced");
         }
-        LOGGER.warning("Using " + list[0] + " as the archive!");
+        logger.println("WARNING! Using the first match:" + list[0] + " as the archive!");
       }
+      if (artifact.contains("*")) logger.println(list[0] + " matched for: " + artifact);
       return list[0];
     } catch (IOException e) {
-      LOGGER.severe("Couldn't list artifacts, reason: " + e.getMessage());
+      logger.println("ERROR! Couldn't list artifacts, reason: " + e.getMessage());
     }
     return null;
   }

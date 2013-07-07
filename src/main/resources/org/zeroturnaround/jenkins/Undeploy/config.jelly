@@ -12,9 +12,70 @@
   </f:entry>
 
   <f:entry title="Servers">
-    <div id="lr-undeploy-servers-${descriptor.getUniqueId()}" class="lr-undeploy-servers">
+    <div id="lr-undeploy-servers-${descriptor.getUniqueId()}" class="lr-undeploy-servers lr-server-selection">
       <f:repeatableProperty field="servers" noAddButton="true" default="${descriptor.getDefaultServers()}"/>
     </div>
   </f:entry>
 
+
+  <f:optionalBlock name="${descriptor.getCurrentUniqueId()}.staticContentForm" title="contains static content" checked="${instance.hasStaticContent}">
+
+    <f:entry title="Static content servers" help="/plugin/liverebel-deploy/help-static-content.html">
+      <div id="lr-undeploy-static-servers-${descriptor.getCurrentUniqueId()}" class="lr-undeploy-static-servers lr-server-selection">
+        <f:repeatableProperty field="staticServers" noAddButton="true" default="${descriptor.getDefaultStaticServers()}"/>
+      </div>
+    </f:entry>
+  </f:optionalBlock>
+
+  <f:optionalBlock name="${descriptor.getCurrentUniqueId()}.schemaSelectionForm" title="contains database migrations (be sure to select schema to which applicstion was deployed)" checked="${instance.hasDatabaseMigrations}">
+    <f:invisibleEntry>
+      <div style="display: none;">
+        <f:textbox name="lrSelectedSchema" value="${instance.selectedSchema}" 
+          clazz="lr-selected-schema ${descriptor.getCurrentUniqueId()}-selected-schema"/>
+      </div>
+    </f:invisibleEntry>
+
+    <f:nested>
+      <table style="margin-left: -3px; width: 700px;">
+        <f:entry title="Schema" field="schema" help="/plugin/liverebel-deploy/help-database-schema.html">
+          <j:forEach var="server" items="${descriptor.getDefaultServers()}" varStatus="loopServer">
+            <j:forEach var="schema" items="${descriptor.getDefaultSchemasByServer(server.getServer())}" varStatus="loopSchema">
+              <j:if test="${loopSchema.first}">
+                <span style="font-size:1.1em;">${server.getTitle()}</span><br />
+              </j:if>
+              <input type="hidden" name="schemaExecutionMode" value="${schema.getExecutionMode().toString()}" />
+              <input type="radio" value="${schema.getId()}" 
+                name="${descriptor.getCurrentUniqueId()}.selectedSchema"
+                id="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}" 
+                  class="dbschema-item ${descriptor.getCurrentUniqueId()}-dbschema-item" />
+              <label class="attach-previous" for="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}">${schema.getName()}</label>
+              <br />
+    
+              <j:if test="${loopSchema.last}">
+                <br />
+              </j:if>
+            </j:forEach>
+          </j:forEach>
+        </f:entry>
+      </table>
+    </f:nested>
+
+
+    <f:invisibleEntry>
+      <div style="display:none;">
+        <f:textbox name="lrTargetProxy" value="${instance.targetProxy}" 
+          clazz="lr-selected-target-proxy-value ${descriptor.getCurrentUniqueId()}-selected-target-proxy-value"/>
+        <f:textbox name="targetProxy" value="${instance.targetProxy}" 
+          clazz="lr-selected-target-proxy ${descriptor.getCurrentUniqueId()}-selected-target-proxy"/>
+      </div>
+    </f:invisibleEntry>
+    
+    
+  </f:optionalBlock>
+
+  <f:invisibleEntry>
+      <div style="display:none;">
+        <f:textbox name="lrStepPrefix" value="${descriptor.getCurrentUniqueId()}" clazz="lr-step-prefix"/>
+      </div>
+  </f:invisibleEntry>
 </j:jelly>

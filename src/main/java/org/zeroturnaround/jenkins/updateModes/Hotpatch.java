@@ -65,7 +65,7 @@ public class Hotpatch extends UpdateMode{
 
     @Override
     public String getDisplayName() {
-      return "Hotpatch";
+      return "Hotpatch (only for Java applications)";
     }
   }
 }

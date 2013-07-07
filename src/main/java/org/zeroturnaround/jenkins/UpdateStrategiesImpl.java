@@ -3,7 +3,9 @@ package org.zeroturnaround.jenkins;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.zeroturnaround.jenkins.updateModes.AllAtOnce;
 import org.zeroturnaround.jenkins.updateModes.FailBuild;
 import org.zeroturnaround.jenkins.updateModes.FullRestart;
 import org.zeroturnaround.jenkins.updateModes.Hotpatch;
@@ -41,6 +43,10 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
     }  else if (updateMode instanceof FullRestart) {
       primary = UpdateMode.OFFLINE;
       connectionPauseTimeout = ((FullRestart) updateMode).connectionPause;
+    }
+    else if (updateMode instanceof AllAtOnce) {
+      primary = UpdateMode.ALL_AT_ONCE_UPDATE;
+      connectionPauseTimeout = ((AllAtOnce) updateMode).connectionPause;
     } else {
       primary = UpdateMode.LIVEREBEL_DEFAULT;
     }
@@ -138,7 +144,15 @@ public class UpdateStrategiesImpl implements Describable<UpdateStrategiesImpl>, 
      return primaryUpdateModes;
     }
 
+    @Override
+    public String getHelpFile(final String fieldName) {
+      if (fieldName.equals("updateMode"))
+        return "/plugin/liverebel-deploy/help-update-strategies.html";
+      else
+        return super.getHelpFile(fieldName);
+    }
   }
+
   @Override
   public String toString() {
     return "UpdateStrategiesImpl{" +

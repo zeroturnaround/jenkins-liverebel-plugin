@@ -1,7 +1,7 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <f:invisibleEntry>
-    <f:textbox name="server" value="${instance.server}"/>
+    <f:textbox name="server" clazz="lr-server-id" value="${instance.server}"/>
   </f:invisibleEntry>
 
   <f:invisibleEntry>
@@ -15,12 +15,26 @@
   <f:invisibleEntry>
     <f:textbox name="online" value="${instance.isOnline()}"/>
   </f:invisibleEntry>
+  
+  <f:invisibleEntry>
+    <f:textbox name="isVirtualHostsSupported" value="${instance.isVirtualHostsSupported()}"/>
+  </f:invisibleEntry>
+  
+  <j:if test="${!instance.isGroup()}">
+    <f:invisibleEntry>
+      <j:forEach var="vh" items="${instance.getVirtualHostNames()}" indexVar="idx">
+        <j:if test="${vh != instance.getDefaultVirtualHostName()}">
+          <f:textbox name="vh_${idx}" value="${vh}" clazz="lr-vhost-item-${instance.server} lr-vhost-item" />
+        </j:if>
+      </j:forEach>
+    </f:invisibleEntry>
+  </j:if>
 
-  <f:entry field="" >
+  <f:entry field="">
     <div class="${instance.getIndentDepthAsCSSClass()} ${instance.getParentNames()}">
       <j:if test="${instance.isGroup()}">
         <f:checkbox name="selected" value="${instance.title}" default="${instance.isSelected()}" checked="${instance.isSelected()}"
-                    onclick="toggleDependentCheckboxes(this);" title="${instance.title}"/>
+          onclick="toggleDependentCheckboxes(this);" title="${instance.title}" />
       </j:if>
       <j:if test="${!instance.isGroup()}">
         <f:checkbox name="selected" value="${instance.title}" default="${instance.isSelected()}" checked="${instance.isSelected()}"

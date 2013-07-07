@@ -1,15 +1,17 @@
 package org.zeroturnaround.jenkins;
 
+import java.util.Set;
+
 import hudson.Extension;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-
-
 import hudson.model.Hudson;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.zeroturnaround.liverebel.plugins.Server;
+
+import com.zeroturnaround.liverebel.util.ServerKind;
 
 public class ServerCheckbox implements Describable<ServerCheckbox>, Server {
 
@@ -24,8 +26,14 @@ public class ServerCheckbox implements Describable<ServerCheckbox>, Server {
   private final boolean connected;
   private final boolean isGroup;
 
+  private final ServerKind type;
+  private final Set<String> virtualHostNames;
+  private final String defaultVirtualHostName;
+  private final boolean virtualHostsSupported;
+
   @DataBoundConstructor
-  public ServerCheckbox(String server, String title, String parentNames, int indentDepth, boolean selected, boolean online, boolean isGroup) {
+  public ServerCheckbox(String server, String title, String parentNames, int indentDepth, boolean selected, boolean online, boolean isGroup, ServerKind type,
+                        boolean virtualHostsSupported, String defaultVirtualHostName, Set<String> virtualHostNames) {
     this.id = server;
     this.parentNames = parentNames;
     this.indentDepth = indentDepth;
@@ -33,6 +41,10 @@ public class ServerCheckbox implements Describable<ServerCheckbox>, Server {
     this.title = title;
     this.checked = selected;
     this.isGroup = isGroup;
+    this.type = type;
+    this.virtualHostsSupported = virtualHostsSupported;
+    this.defaultVirtualHostName = defaultVirtualHostName;
+    this.virtualHostNames = virtualHostNames;
   }
 
   public String getIndentDepthAsCSSClass() {
@@ -115,6 +127,14 @@ public class ServerCheckbox implements Describable<ServerCheckbox>, Server {
     return "{ GROUP_NAME="+getTitle()+" checked="+isSelected()+" isGroup="+isGroup() + " connected="+isOnline() + " parentNames="+parentNames+" }";
   }
 
+  public ServerKind getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    throw new UnsupportedOperationException("setType");
+  }
+
   @Extension
   public static class DescriptorImpl extends Descriptor<ServerCheckbox> {
 
@@ -122,5 +142,17 @@ public class ServerCheckbox implements Describable<ServerCheckbox>, Server {
     public String getDisplayName() {
       return "Server checkbox";
     }
+  }
+
+  public Set<String> getVirtualHostNames() {
+    return virtualHostNames;
+  }
+
+  public String getDefaultVirtualHostName() {
+    return defaultVirtualHostName;
+  }
+
+  public boolean isVirtualHostsSupported() {
+    return virtualHostsSupported;
   }
 }

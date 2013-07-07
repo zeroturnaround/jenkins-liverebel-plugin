@@ -1,27 +1,28 @@
 package org.zeroturnaround.jenkins.updateModes;
 
+import hudson.Extension;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.zeroturnaround.liverebel.plugins.PluginUtil;
 
-import hudson.Extension;
+public class AllAtOnce extends UpdateMode {
 
-public class FullRestart extends UpdateMode{
   public final int connectionPause;
 
-  public FullRestart() {
+  public AllAtOnce() {
     this.connectionPause = PluginUtil.DEFAULT_REQUEST_PAUSE;
   }
 
   @DataBoundConstructor
-  public FullRestart(int connectionPause) {
+  public AllAtOnce(int connectionPause) {
     this.connectionPause = connectionPause;
   }
 
   @Override
   public String toString() {
-    return "Full restart (only for Java applications)";
+    return "All at once (only for non-Java applications)";
   }
 
   @Extension
-  public static final UpdateMode.UpdateModeDescriptor D = new UpdateMode.UpdateModeDescriptor(FullRestart.class);
+  public static final UpdateMode.UpdateModeDescriptor D = new UpdateMode.UpdateModeDescriptor(AllAtOnce.class);
 }

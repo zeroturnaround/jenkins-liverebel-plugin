@@ -1,0 +1,7 @@
+<div>
+<p><b>All-at-once</b> - non-Java applications only: the update will be applied to all your servers at the same time. Whether sessions are lost or not, depends on your web server.</p>
+<p><b>Full restart</b> - Java only: the update will restart all your application servers at the same time, so there will be downtime for users. Sessions are lost.</p>
+<p><b>Hotpatch</b> - Java only: the update will be applied instantly in the running JVM, without any restart or redeploy. No sessions or state is lost.</p>
+<p><b>Rolling Restarts</b> - The update will be applied to all servers at different times, so there will be no downtime for users. Sessions are drained between servers. 
+If applicable, Java application servers are restarted during the application update.</p>
+</div>

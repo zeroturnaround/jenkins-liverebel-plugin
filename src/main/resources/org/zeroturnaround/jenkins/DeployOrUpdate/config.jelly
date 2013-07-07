@@ -26,9 +26,16 @@
     </f:entry>
   </j:if>
 
-  <f:entry title="Context path" field="contextPath">
+  <f:entry title="Path" field="contextPath" help="/plugin/liverebel-deploy/help-path.html">
     <f:textbox/>
   </f:entry>
+
+  <f:optionalBlock name="${descriptor.getCurrentUniqueId()}.destinationFileNameForm" title="application is an EAR" 
+    checked='${instance == null ? false : !instance.isDestinationFileNameSelected()}' inline="true">
+    <f:entry title="Destination file" field="destinationFileName" help="/plugin/liverebel-deploy/help-destination-file-name.html">
+      <f:textbox/>
+    </f:entry>
+  </f:optionalBlock>
 
   <f:entry field="testServers">
     <div style="display: none;">
@@ -37,11 +44,104 @@
   </f:entry>
 
   <f:entry title="Servers" >
-    <div id="lr-deployOrUpdate-servers-${descriptor.getUniqueId()}" class="lr-deployOrUpdate-servers">
+    <div id="lr-deployOrUpdate-servers-${descriptor.getUniqueId()}" class="lr-deployOrUpdate-servers lr-server-selection">
       <f:repeatableProperty field="servers" noAddButton="true" default="${descriptor.getDefaultServers()}"/>
     </div>
   </f:entry>
 
-  <f:optionalProperty field="updateStrategies"  title="Show advanced Update settings" />
+  <f:entry title="Options"></f:entry>
 
+  <f:optionalBlock name="${descriptor.getCurrentUniqueId()}.virtualHostForm" title="non-default virtual host" 
+    checked='${instance == null ? false : !instance.isDefaultHostSelected()}' inline="true">
+
+    <f:invisibleEntry>
+      <div style="display: none;">
+        <f:textbox name="lrSelectedVhost" value="${instance.virtualHost}" clazz="lr-selected-vhost"/>
+      </div>
+    </f:invisibleEntry>
+    <f:entry title="" help="/plugin/liverebel-deploy/help-vhost.html">
+      <div class="secondLevel lr-deployOrUpdate-vhost-list ${descriptor.getCurrentUniqueId()}-vhost-list" />
+    </f:entry>
+  </f:optionalBlock>
+
+  <f:optionalBlock name="${descriptor.getCurrentUniqueId()}.staticContentForm" title="contains static content" checked="${instance.hasStaticContent}">
+    <f:nested>
+      <table style="margin-left: -3px; width: 700px;">
+        <f:entry title="Static content servers" help="/plugin/liverebel-deploy/help-static-content.html">
+          <div id="lr-deployOrUpdate-static-servers-${descriptor.getCurrentUniqueId()}" class="lr-deployOrUpdate-static-servers lr-server-selection">
+            <f:repeatableProperty field="staticServers" noAddButton="true" default="${descriptor.getDefaultStaticServers()}"/>
+          </div>
+        </f:entry>
+        <f:entry title="Path" field="filePath" help="/plugin/liverebel-deploy/help-file-path.html">
+          <f:textbox/>
+        </f:entry>
+      </table>
+    </f:nested>
+  </f:optionalBlock>
+
+  <f:optionalBlock name="${descriptor.getCurrentUniqueId()}.schemaSelectionForm" title="contains database migrations" checked="${instance.hasDatabaseMigrations}">
+    <f:invisibleEntry>
+     <div style="display: none;">
+      <f:textbox name="lrSelectedSchema" value="${instance.selectedSchema}" 
+        clazz="lr-selected-schema ${descriptor.getCurrentUniqueId()}-selected-schema"/>
+    </div>
+    </f:invisibleEntry>
+    <f:nested>
+      <table style="margin-left: -3px; width: 700px;">
+        <f:entry title="Choose schema" field="schema" help="/plugin/liverebel-deploy/help-database-schema.html">
+          <j:forEach var="server" items="${descriptor.getDefaultServers()}" varStatus="loopServer">
+            <j:if test="${loopServer.first}">
+              <br />
+            </j:if>
+            <j:forEach var="schema" items="${descriptor.getDefaultSchemasByServer(server.getServer())}" varStatus="loopSchema">
+              <j:if test="${loopSchema.first}">
+                <span style="font-size:1.1em;">Server '${server.getTitle()}'</span><br />
+              </j:if>
+              <input type="hidden" name="schemaExecutionMode" value="${schema.getExecutionMode().toString()}" />
+              <input type="radio" value="${schema.getId()}" 
+                name="${descriptor.getCurrentUniqueId()}.selectedSchema"
+                id="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}" 
+                  class="dbschema-item ${descriptor.getCurrentUniqueId()}-dbschema-item" 
+                  onclick="setTargetProxyFromSchema(this, '${schema.getTargetProxyServer()}')" style="margin-left:10px;" />
+              <label class="attach-previous" for="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}">${schema.getName()}</label>
+              <br />
+              <j:if test="${schema.getTargetProxyServer() == null}">
+                <div class="lr-proxy-selection lr-proxy-selection-${schema.getId()}" style="display: none;margin-left:35px;">
+                Select proxy server to execute migrations on:<st:nbsp/>
+                <select name="lr-proxy-selection" onchange="setTargetProxyFromProxySelector(this.options[this.selectedIndex])">
+                  <option value="">-- Select proxy server --</option>
+                  <j:forEach var="proxyServer" items="${descriptor.getDefaultProxyServers()}" varStatus="loopProxyServer">
+                    <option value="${proxyServer.getServer()}">${proxyServer.getTitle()}</option>
+                  </j:forEach>
+                </select>
+                <br />
+                </div>
+              </j:if>
+              <j:if test="${loopSchema.last}">
+                <br />
+              </j:if>
+            </j:forEach>
+          </j:forEach>
+        </f:entry>
+      </table>
+    </f:nested>
+
+    <f:invisibleEntry>
+      <div style="display:none;">
+        <f:textbox name="lrTargetProxy" value="${instance.targetProxy}" 
+          clazz="lr-selected-target-proxy-value ${descriptor.getCurrentUniqueId()}-selected-target-proxy-value"/>
+        <f:textbox name="targetProxy" value="${instance.targetProxy}" 
+          clazz="lr-selected-target-proxy ${descriptor.getCurrentUniqueId()}-selected-target-proxy"/>
+      </div>
+    </f:invisibleEntry>
+
+  </f:optionalBlock>
+
+  <f:optionalProperty field="updateStrategies"  title="Show advanced update settings" />
+
+  <f:invisibleEntry>
+      <div style="display:none;">
+        <f:textbox name="lrStepPrefix" value="${descriptor.getCurrentUniqueId()}" clazz="lr-step-prefix"/>
+      </div>
+  </f:invisibleEntry>
 </j:jelly>

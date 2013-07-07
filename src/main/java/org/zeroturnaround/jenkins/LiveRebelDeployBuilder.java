@@ -24,7 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.servlet.ServletException;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -33,6 +35,7 @@ import org.zeroturnaround.jenkins.util.JenkinsLogger;
 import org.zeroturnaround.liverebel.plugins.PluginConf;
 import org.zeroturnaround.liverebel.plugins.PluginUtil;
 import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
+
 import com.zeroturnaround.liverebel.api.CommandCenter;
 import com.zeroturnaround.liverebel.api.CommandCenterFactory;
 import com.zeroturnaround.liverebel.api.ConnectException;
@@ -122,7 +125,18 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
   private void undeployConfiguration(EnvVars envVars) {
     conf.undeployId = envVars.expand(undeploy.undeployID);
-    conf.serverIds = getDeployableServers();
+    conf.serverIds = getDeployableServers(undeploy.servers);
+    if (undeploy.hasDatabaseMigrations) {
+      conf.schemaId = undeploy.selectedSchema;
+      conf.targetProxyId = undeploy.targetProxy;
+      conf.hasDatabaseMigrations = true;
+    }
+
+    if (undeploy.hasStaticContent) {
+      conf.staticServerIds = new ArrayList<String>();
+      conf.staticServerIds.addAll(getDeployableServers(undeploy.staticServers));
+      conf.hasStaticContent = true;
+    }
   }
 
   private void deployOrUpdateConfiguration(AbstractBuild build, Launcher launcher, BuildListener listener, EnvVars envVars) throws InterruptedException {
@@ -134,8 +148,23 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       conf.overrideApp = envVars.expand(deployOrUpdate.app);
       conf.overrideVer = envVars.expand(deployOrUpdate.ver);
     }
-    conf.serverIds = getDeployableServers();
+    conf.serverIds = getDeployableServers(deployOrUpdate.servers);
     conf.contextPath = envVars.expand(deployOrUpdate.contextPath);
+
+    if (deployOrUpdate.hasDatabaseMigrations) {
+      conf.schemaId = deployOrUpdate.selectedSchema;
+      conf.targetProxyId = deployOrUpdate.targetProxy;
+      conf.hasDatabaseMigrations = true;
+    }
+
+    conf.destinationFileName = envVars.expand(deployOrUpdate.destinationFileName);
+    conf.virtualHostName = envVars.expand(deployOrUpdate.virtualHost);
+    if (deployOrUpdate.hasStaticContent) {
+      conf.filePath = envVars.expand(deployOrUpdate.filePath);
+      conf.staticServerIds = new ArrayList<String>();
+      conf.staticServerIds.addAll(getDeployableServers(deployOrUpdate.staticServers));
+      conf.hasStaticContent = true;
+    }
   }
 
   private void uploadConfiguration(AbstractBuild build, Launcher launcher, BuildListener listener, EnvVars envVars) throws InterruptedException {
@@ -180,7 +209,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       else if (list.length > 1) {
         logger.println("WARNING! Multiple archives matched for '" +  artifact + "', but LiveRebel plugin supports only one per build action!");
         for (FilePath filePath : list) {
-          logger.println(filePath + " mathced");
+          logger.println(filePath + " matched");
         }
         logger.println("WARNING! Using the first match:" + list[0] + " as the archive!");
       }
@@ -202,20 +231,12 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     return (DescriptorImpl) Hudson.getInstance().getDescriptor(getClass());
   }
 
-  private List<String> getDeployableServers() {
+  private List<String> getDeployableServers(List<ServerCheckbox> servers) {
     List<String> list = new ArrayList<String>();
-    if (conf.getAction().equals(PluginConf.Action.DEPLOY_OR_UPDATE)) {
-      if (deployOrUpdate != null && deployOrUpdate.servers != null) {
-        for (ServerCheckbox server : deployOrUpdate.servers)
-          if (server.isChecked() && !server.isGroup() && server.isConnected())
-            list.add(server.getId());
-      }
-    } else if (conf.getAction().equals(PluginConf.Action.UNDEPLOY)) {
-      if (undeploy != null && undeploy.servers != null) {
-        for (ServerCheckbox server : undeploy.servers)
-          if (server.isChecked() && !server.isGroup() && server.isConnected())
-            list.add(server.getId());
-      }
+    if (servers != null) {
+      for (ServerCheckbox server : servers)
+        if (server.isChecked() && !server.isGroup() && server.isConnected())
+          list.add(server.getId());
     }
 
     return list;
@@ -324,7 +345,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
      * This human readable name is used in the configuration screen.
      */
     public String getDisplayName() {
-      return "Deploy or Update artifact with LiveRebel";
+      return "Execute LiveRebel operation";
     }
 
     @Override

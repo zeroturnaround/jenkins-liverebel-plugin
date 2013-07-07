@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>liverebel-deploy</artifactId>
-  <version>2.5.6-SNAPSHOT</version>
+  <version>2.7.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>LiveRebel Plugin</name>
   <description>LiveRebel Plugin helps to run updates to your JEE containers faster. LiveRebel is a tool for hot updates without downtime,
@@ -44,6 +44,10 @@
     <developer>
       <id>poolik</id>
       <name>Tonis Pool</name>
+    </developer>
+    <developer>
+      <id>glebsts</id>
+      <name>Gleb Stsenov</name>
     </developer>
   </developers>
 
@@ -219,7 +223,7 @@
     <dependency>
       <groupId>org.zeroturnaround</groupId>
       <artifactId>liverebel-plugin-util</artifactId>
-      <version>1.0.7</version>
+      <version>1.0.8</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

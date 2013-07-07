@@ -41,7 +41,7 @@ public class OverrideForm implements Describable<OverrideForm>{
 
     @Override
     public String getDisplayName() {
-      return "Overrode form";
+      return "Override form";
     }
   }
 }

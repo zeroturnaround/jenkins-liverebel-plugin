@@ -2,6 +2,11 @@
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
 
+2.7.0 (05th of Aug 2013)
+* Bumped liverebel-lugin-util version to support LR 2.7.5 features
+* Step GUI updated to support features of LR 2.7.5 (static content, db schemas and proxies, EAR deployments, All-At-Once update)
+* Server groups selector default collapsing changed - hides only content of root group where no children selected
+
 2.5.4 (21st of Nov 2012)
 * Added notifications also to undeploy task view
 * Warn if no online servers

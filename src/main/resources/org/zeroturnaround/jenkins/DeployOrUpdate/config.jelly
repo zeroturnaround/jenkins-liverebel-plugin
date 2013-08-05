@@ -103,7 +103,7 @@
                 id="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}" 
                   class="dbschema-item ${descriptor.getCurrentUniqueId()}-dbschema-item" 
                   onclick="setTargetProxyFromSchema(this, '${schema.getTargetProxyServer()}')" style="margin-left:10px;" />
-              <label class="attach-previous" for="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}">${schema.getName()}</label>
+              <label class="attach-previous">${schema.getName()}</label>
               <br />
               <j:if test="${schema.getTargetProxyServer() == null}">
                 <div class="lr-proxy-selection lr-proxy-selection-${schema.getId()}" style="display: none;margin-left:35px;">

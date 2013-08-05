@@ -48,9 +48,9 @@
                 name="${descriptor.getCurrentUniqueId()}.selectedSchema"
                 id="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}" 
                   class="dbschema-item ${descriptor.getCurrentUniqueId()}-dbschema-item" />
-              <label class="attach-previous" for="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}">${schema.getName()}</label>
+              <label class="attach-previous">${schema.getName()}</label>
               <br />
-    
+
               <j:if test="${loopSchema.last}">
                 <br />
               </j:if>
@@ -60,7 +60,6 @@
       </table>
     </f:nested>
 
-
     <f:invisibleEntry>
       <div style="display:none;">
         <f:textbox name="lrTargetProxy" value="${instance.targetProxy}" 
@@ -69,8 +68,7 @@
           clazz="lr-selected-target-proxy ${descriptor.getCurrentUniqueId()}-selected-target-proxy"/>
       </div>
     </f:invisibleEntry>
-    
-    
+
   </f:optionalBlock>
 
   <f:invisibleEntry>

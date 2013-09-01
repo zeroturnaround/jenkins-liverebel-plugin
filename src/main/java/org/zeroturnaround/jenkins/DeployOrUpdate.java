@@ -88,7 +88,7 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
     else {
       this.selectedSchema = null;
       this.targetProxy = null;
-    this.hasDatabaseMigrations = false;
+      this.hasDatabaseMigrations = false;
     }
 
     if (virtualHostForm) {
@@ -158,7 +158,7 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
   @Extension
   public static class DescriptorImpl extends ArtifactAndMetadataDescriptor<LiveRebelDeployBuilder.ActionWrapper> {
     private List<Server> descriptorServers;
-    private List<SchemaInfo> schemas;
+    private List<SchemaInfo> schemas = null;
     private String tempUniqueId;
 
     @Override
@@ -176,16 +176,14 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
     }
 
     public List<SchemaInfo> getDefaultSchemas() {
-      if (schemas == null)
-        schemas = new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getSchemas();
+      schemas = new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getSchemas();
       return schemas;
     }
 
     public List<SchemaInfo> getDefaultSchemasByServer(String serverId) {
       if (serverId == null || serverId.length() == 0)
         return new ArrayList<SchemaInfo>();
-      if (schemas == null)
-        schemas = new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getSchemas();
+      schemas = new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getSchemas();
       List<SchemaInfo> schemasByServer = new ArrayList<SchemaInfo>();
       for (SchemaInfo schemaInfo : schemas) {
         if (schemaInfo.getServerId().equalsIgnoreCase(serverId))

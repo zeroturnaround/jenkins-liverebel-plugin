@@ -13,7 +13,7 @@ Installation for development
 
 1. Clone it.
 2. Change your maven settings.xml according to https://wiki.jenkins-ci.org/display/JENKINS/Plugin+tutorial
-  Nexus users should follow these steps https://wiki.jenkins-ci.org/display/JENKINS/HudsonWithNexus
+  Nexus users should follow these steps https://wiki.jenkins-ci.org/display/JENKINS/Jenkins+Development+Environment+with+Nexus
   If you are using nexus but do not want to mess with Nexus Manager and configure all of the proxy repositories that hudson requires, then use the first link, but make sure you comment mirrors tag before running this project for the first time.
 
 3. mvn install/package

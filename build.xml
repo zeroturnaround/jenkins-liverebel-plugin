@@ -23,9 +23,7 @@
     <zip destfile="${final.artifact}">
       <fileset dir="${final.artifact.expanded}"/>
     </zip>
-    <!--
     <delete dir="${final.artifact.expanded}"/>
-    -->
   </target>
 
 </project>

@@ -15,6 +15,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  *****************************************************************/
+import hudson.DescriptorExtensionList;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.BuildListener;
+import hudson.model.Describable;
+import hudson.model.Result;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Descriptor;
+import hudson.model.Hudson;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
+import hudson.tasks.ArtifactArchiver;
+import hudson.util.FormValidation;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -22,42 +39,27 @@ import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
+
+import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeroturnaround.jenkins.updateModes.LiveRebelDefault;
-import org.zeroturnaround.jenkins.util.JenkinsLogger;
 import org.zeroturnaround.liverebel.plugins.PluginConf;
 import org.zeroturnaround.liverebel.plugins.PluginUtil;
 import org.zeroturnaround.liverebel.plugins.UpdateStrategies;
+import org.zeroturnaround.liverebel.plugins.logging.PluginBuildLogListener;
+import org.zeroturnaround.liverebel.plugins.logging.PluginLoggerFactory;
 
 import com.zeroturnaround.liverebel.api.CommandCenter;
 import com.zeroturnaround.liverebel.api.CommandCenterFactory;
 import com.zeroturnaround.liverebel.api.ConnectException;
 import com.zeroturnaround.liverebel.api.Forbidden;
-
-import hudson.DescriptorExtensionList;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import hudson.model.Hudson;
-import hudson.model.Result;
-import hudson.tasks.ArtifactArchiver;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.Builder;
-import hudson.util.FormValidation;
-import net.sf.json.JSONObject;
 
 public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
@@ -67,9 +69,6 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
   public final ActionWrapper action;
 
   private final PluginConf conf;
-
-  private static final Logger LOGGER = Logger.getLogger(LiveRebelDeployBuilder.class.getName());
-
 
   // Fields in config.jelly must match the parameter names in the
   // "DataBoundConstructor"
@@ -102,6 +101,20 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
   @Override
   public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException,
       InterruptedException {
+    PluginBuildLogListener logListener = null;
+    try {
+      logListener = PluginLoggerFactory.getInstance().addBuildLogListener(
+          listener.getLogger(), "jenkins-"+ build.getProject().getName() + "-" + build.number, null,
+          "org.zeroturnaround.jenkins", DescriptorImpl.isDebugLoggingEnabled());
+      return tryPerform(build, launcher, listener);
+    }
+    finally {
+      PluginLoggerFactory.getInstance().removeBuildLogListener(logListener);
+    }
+  }
+
+  private boolean tryPerform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException,
+      InterruptedException {
     EnvVars envVars = build.getEnvironment(listener);
     switch (conf.getAction()) {
       case UPLOAD:
@@ -116,7 +129,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     }
 
     CommandCenterFactory commandCenterFactory = getCommandCenterFactory();
-    PluginUtil pluginUtil = new PluginUtil(commandCenterFactory, new JenkinsLogger(listener));
+    PluginUtil pluginUtil = new PluginUtil(commandCenterFactory, new JenkinsPluginMessages());
 
     if (pluginUtil.perform(conf) != PluginUtil.PluginActionResult.SUCCESS)
       build.setResult(Result.FAILURE);
@@ -222,7 +235,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
   }
 
   protected CommandCenterFactory getCommandCenterFactory() {
-    return new CommandCenterFactory().setUrl(getDescriptor().getLrUrl()).setVerbose(true).authenticate(getDescriptor().getAuthToken());
+    return new CommandCenterFactory().setUrl(DescriptorImpl.getLrUrl()).setVerbose(true).authenticate(DescriptorImpl.getAuthToken());
   }
 
   // Overridden for better type safety.
@@ -245,18 +258,20 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
   @Extension
   public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-    private static final Logger LOGGER = Logger.getLogger(DescriptorImpl.class.getName());
     public DescriptorImpl() {
       load();
       staticAuthToken = authToken;
       staticLrUrl = lrUrl;
+      staticIsDebugLoggingEnabled = isDebugLoggingEnabled;
     }
 
     public static String staticAuthToken; //needed cause Jenkins cannot initialize static fields from xml;
     public static String staticLrUrl;
+    public static boolean staticIsDebugLoggingEnabled = false;
 
     private String authToken;
     private String lrUrl;
+    private boolean isDebugLoggingEnabled = false;
 
     public static String getAuthToken() {
       return staticAuthToken;
@@ -266,9 +281,14 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       return staticLrUrl;
     }
 
+    public static boolean isDebugLoggingEnabled() {
+      return staticIsDebugLoggingEnabled;
+    }
+
     public static CommandCenter newCommandCenter() {
+      Logger log = LoggerFactory.getLogger(DescriptorImpl.class);
       if (getLrUrl() == null || getAuthToken() == null) {
-        LOGGER.warning("Please, navigate to Jenkins Configuration to specify running LiveRebel Url and Authentication Token.");
+        log.warn("Please, navigate to Jenkins Configuration to specify running LiveRebel Url and Authentication Token.");
         return null;
       }
 
@@ -276,16 +296,16 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
         return new CommandCenterFactory().setUrl(getLrUrl()).setVerbose(true).authenticate(getAuthToken()).newCommandCenter();
       }
       catch (Forbidden e) {
-        LOGGER.warning("ERROR! Access denied. Please, navigate to Jenkins Configuration to specify LiveRebel Authentication Token.");
+        log.warn("ERROR! Access denied. Please, navigate to Jenkins Configuration to specify LiveRebel Authentication Token.");
       }
       catch (ConnectException e) {
-        LOGGER.warning("ERROR! Unable to connect to server.");
-        LOGGER.log(Level.WARNING, "URL: {0}", e.getURL());
+        log.warn("ERROR! Unable to connect to server.");
+        log.warn("URL: {}", e.getURL());
         if (e.getURL().equals("https://")) {
-          LOGGER.warning("Please, navigate to Jenkins Configuration to specify running LiveRebel Url.");
+          log.warn("Please, navigate to Jenkins Configuration to specify running LiveRebel URL.");
         }
         else {
-          LOGGER.log(Level.WARNING, "Reason: {0}", e.getMessage());
+          log.warn("Reason: {}", e.getMessage());
         }
       }
       return null;
@@ -354,8 +374,10 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       // set that to properties and call save().
       authToken = formData.getString("authToken");
       lrUrl = "https://" + formData.getString("lrUrl").replaceFirst("http://", "").replaceFirst("https://", "");
+      isDebugLoggingEnabled = formData.getBoolean("isDebugLoggingEnabled");
       staticAuthToken = authToken;
       staticLrUrl = lrUrl;
+      staticIsDebugLoggingEnabled = isDebugLoggingEnabled;
       save();
       return super.configure(req, formData);
     }
@@ -367,6 +389,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
   public static class ActionWrapper implements Describable<ActionWrapper> {
 
+    @SuppressWarnings("unchecked")
     public Descriptor<ActionWrapper> getDescriptor() {
       return Hudson.getInstance().getDescriptor(getClass());
     }

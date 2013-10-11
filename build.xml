@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="jenkins-liverebel-plugin" default="alter-hpi">
+
+  <target name="alter-hpi">
+    <property name="final.artifact" value="${project.build.directory}/${project.build.finalName}.${project.packaging}"/>
+    <property name="final.artifact.expanded" value="${project.build.directory}/${project.build.finalName}-expanded"/>
+    <property name="final.artifact.shaded" value="${project.build.directory}/${project.build.finalName}-shaded.jar"/>
+    <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" classpath="${com.googlecode.jarjar:jarjar:jar}"/>
+    <unzip src="${final.artifact}" dest="${final.artifact.expanded}"/>
+    <delete file="${final.artifact}"/>
+    <!-- We shade the logging API and implementation, so we do not conflict with Jenkins internals -->
+    <jarjar jarfile="${final.artifact.shaded}">
+      <fileset dir="${final.artifact.expanded}/WEB-INF/classes"/>
+      <zipgroupfileset dir="${final.artifact.expanded}/WEB-INF/lib" includes="*.jar" />
+      <rule pattern="org.slf4j.**" result="org.zeroturnaround.liverebel.plugins.jenkins.shaded.@0"/>
+      <rule pattern="org.apache.**" result="org.zeroturnaround.liverebel.plugins.jenkins.shaded.@0"/>
+      <rule pattern="ch.qos.logback.**" result="org.zeroturnaround.liverebel.plugins.jenkins.shaded.@0"/>
+    </jarjar>
+    <delete dir="${final.artifact.expanded}/WEB-INF/classes"/>
+    <delete dir="${final.artifact.expanded}/WEB-INF/lib"/>
+    <mkdir  dir="${final.artifact.expanded}/WEB-INF/lib"/>
+    <move file="${final.artifact.shaded}" tofile="${final.artifact.expanded}/WEB-INF/lib/${project.build.finalName}.jar"/>
+    <zip destfile="${final.artifact}">
+      <fileset dir="${final.artifact.expanded}"/>
+    </zip>
+    <!--
+    <delete dir="${final.artifact.expanded}"/>
+    -->
+  </target>
+
+</project>

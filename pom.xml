@@ -49,6 +49,10 @@
       <id>glebsts</id>
       <name>Gleb Stsenov</name>
     </developer>
+    <developer>
+      <id>nemecec</id>
+      <name>Neeme Praks</name>
+    </developer>
   </developers>
 
   <build>
@@ -97,6 +101,39 @@
         <configuration>
           <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jenkins-ci.tools</groupId>
+        <artifactId>maven-hpi-plugin</artifactId>
+        <configuration>
+          <pluginFirstClassLoader>true</pluginFirstClassLoader>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.7</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <property name="project.build.finalName" value="${project.build.finalName}"/>
+                <ant antfile="build.xml"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.googlecode.jarjar</groupId>
+            <artifactId>jarjar</artifactId>
+            <version>1.3</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
     <pluginManagement>
@@ -223,7 +260,7 @@
     <dependency>
       <groupId>org.zeroturnaround</groupId>
       <artifactId>liverebel-plugin-util</artifactId>
-      <version>1.0.8</version>
+      <version>1.0.9-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

@@ -16,6 +16,10 @@
 		<f:entry title="LiveRebel URL" description="URL of running LiveRebel" field="lrUrl">
 			<f:textbox default="https://localhost:9001" />
 		</f:entry>
+		<f:entry title="Debug logging" description="Show extra logging while execurting LiveRebel build steps" field="isDebugLoggingEnabled">
+			<f:checkbox name="isDebugLoggingEnabled" value="enable debug logging" title="enable debug logging"
+				default="${descriptor.isDebugLoggingEnabled()}" checked="${descriptor.isDebugLoggingEnabled()}"/>
+		</f:entry>
 		<f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="authToken,lrUrl" />
 	</f:section>
 </j:jelly>

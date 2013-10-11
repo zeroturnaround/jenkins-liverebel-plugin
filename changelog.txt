@@ -2,10 +2,14 @@
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
 
-2.7.1 (01st of Sep 2013)
+2.7.2 (11th of Oct 2013)
+* Fix for a NPE when liverebel.xml is not provided and override information is not specified. The fix is to give a proper error message, instead of NPE.
+* Added a checkbox to LiveRebel Jenkins plugin configuration page, to make it easy to turn debug level logging on and off.
+
+2.7.1 (1st of Sep 2013)
 * Schemas are now properly updated from LR
 
-2.7.0 (05th of Aug 2013)
+2.7.0 (5th of Aug 2013)
 * Bumped liverebel-lugin-util version to support LR 2.7.5 features
 * Step GUI updated to support features of LR 2.7.5 (static content, db schemas and proxies, EAR deployments, All-At-Once update)
 * Server groups selector default collapsing changed - hides only content of root group where no children selected

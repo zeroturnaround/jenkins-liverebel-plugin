@@ -2,6 +2,12 @@
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
 
+2.7.3 (15th of Nov 2013)
+* Fixed a memory leak (each time plugin was connecting to LiveRebel Command Center, it did not dispose of the HTTP connections properly)
+* Improved performance, the plugin now caches the connection to LiveRebel Command Center
+* Filter out database servers from servers list
+* Improved database schema list visuals under "undeploy" dialog
+
 2.7.2 (11th of Oct 2013)
 * Fix for a NPE when liverebel.xml is not provided and override information is not specified. The fix is to give a proper error message, instead of NPE.
 * Added a checkbox to LiveRebel Jenkins plugin configuration page, to make it easy to turn debug level logging on and off.

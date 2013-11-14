@@ -260,7 +260,7 @@
     <dependency>
       <groupId>org.zeroturnaround</groupId>
       <artifactId>liverebel-plugin-util</artifactId>
-      <version>1.0.9</version>
+      <version>1.0.10-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

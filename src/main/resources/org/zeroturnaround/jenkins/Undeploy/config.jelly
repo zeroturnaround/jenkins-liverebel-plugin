@@ -37,8 +37,11 @@
 
     <f:nested>
       <table style="margin-left: -3px; width: 700px;">
-        <f:entry title="Schema" field="schema" help="/plugin/liverebel-deploy/help-database-schema.html">
-          <j:forEach var="server" items="${descriptor.getDefaultServers()}" varStatus="loopServer">
+        <f:entry title="Choose schema" field="schema" help="/plugin/liverebel-deploy/help-database-schema.html">
+          <j:forEach var="server" items="${descriptor.getDatabaseServers()}" varStatus="loopServer">
+            <j:if test="${loopServer.first}">
+              <br />
+            </j:if>
             <j:forEach var="schema" items="${descriptor.getDefaultSchemasByServer(server.getServer())}" varStatus="loopSchema">
               <j:if test="${loopSchema.first}">
                 <span style="font-size:1.1em;">${server.getTitle()}</span><br />
@@ -47,7 +50,7 @@
               <input type="radio" value="${schema.getId()}" 
                 name="${descriptor.getCurrentUniqueId()}.selectedSchema"
                 id="dbschema-item-${schema.getId()}-${descriptor.getCurrentUniqueId()}" 
-                  class="dbschema-item ${descriptor.getCurrentUniqueId()}-dbschema-item" />
+                  class="dbschema-item ${descriptor.getCurrentUniqueId()}-dbschema-item" style="margin-left:10px;"/>
               <label class="attach-previous">${schema.getName()}</label>
               <br />
 

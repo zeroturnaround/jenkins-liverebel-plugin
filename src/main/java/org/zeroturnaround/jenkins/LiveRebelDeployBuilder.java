@@ -47,8 +47,6 @@ import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.zeroturnaround.jenkins.updateModes.LiveRebelDefault;
 import org.zeroturnaround.liverebel.plugins.PluginConf;
 import org.zeroturnaround.liverebel.plugins.PluginUtil;
@@ -105,7 +103,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     try {
       logListener = PluginLoggerFactory.getInstance().addBuildLogListener(
           listener.getLogger(), "jenkins-"+ build.getProject().getName() + "-" + build.number, null,
-          "org.zeroturnaround.jenkins", DescriptorImpl.isDebugLoggingEnabled());
+          "org.zeroturnaround.jenkins", StaticCommandCenter.isDebugLoggingEnabled());
       return tryPerform(build, launcher, listener);
     }
     finally {
@@ -128,12 +126,18 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
         break;
     }
 
-    CommandCenterFactory commandCenterFactory = getCommandCenterFactory();
-    PluginUtil pluginUtil = new PluginUtil(commandCenterFactory, new JenkinsPluginMessages());
+    CommandCenterFactory commandCenterFactory = StaticCommandCenter.newCommandCenterFactory();
+    PluginUtil pluginUtil = null;
+    try {
+      pluginUtil = new PluginUtil(commandCenterFactory, new JenkinsPluginMessages());
 
-    if (pluginUtil.perform(conf) != PluginUtil.PluginActionResult.SUCCESS)
-      build.setResult(Result.FAILURE);
-    return true;
+      if (pluginUtil.perform(conf) != PluginUtil.PluginActionResult.SUCCESS)
+        build.setResult(Result.FAILURE);
+      return true;
+    }
+    finally {
+      if (pluginUtil != null) pluginUtil.close();
+    }
   }
 
   private void undeployConfiguration(EnvVars envVars) {
@@ -234,10 +238,6 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
     return null;
   }
 
-  protected CommandCenterFactory getCommandCenterFactory() {
-    return new CommandCenterFactory().setUrl(DescriptorImpl.getLrUrl()).setVerbose(true).authenticate(DescriptorImpl.getAuthToken());
-  }
-
   // Overridden for better type safety.
   @Override
   public DescriptorImpl getDescriptor() {
@@ -260,55 +260,23 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
     public DescriptorImpl() {
       load();
-      staticAuthToken = authToken;
-      staticLrUrl = lrUrl;
-      staticIsDebugLoggingEnabled = isDebugLoggingEnabled;
+      StaticCommandCenter.configure(authToken, lrUrl, isDebugLoggingEnabled);
     }
-
-    public static String staticAuthToken; //needed cause Jenkins cannot initialize static fields from xml;
-    public static String staticLrUrl;
-    public static boolean staticIsDebugLoggingEnabled = false;
 
     private String authToken;
     private String lrUrl;
     private boolean isDebugLoggingEnabled = false;
 
-    public static String getAuthToken() {
-      return staticAuthToken;
+    public String getAuthToken() {
+      return authToken;
     }
 
-    public static String getLrUrl() {
-      return staticLrUrl;
+    public String getLrUrl() {
+      return lrUrl;
     }
 
-    public static boolean isDebugLoggingEnabled() {
-      return staticIsDebugLoggingEnabled;
-    }
-
-    public static CommandCenter newCommandCenter() {
-      Logger log = LoggerFactory.getLogger(DescriptorImpl.class);
-      if (getLrUrl() == null || getAuthToken() == null) {
-        log.warn("Please, navigate to Jenkins Configuration to specify running LiveRebel Url and Authentication Token.");
-        return null;
-      }
-
-      try {
-        return new CommandCenterFactory().setUrl(getLrUrl()).setVerbose(true).authenticate(getAuthToken()).newCommandCenter();
-      }
-      catch (Forbidden e) {
-        log.warn("ERROR! Access denied. Please, navigate to Jenkins Configuration to specify LiveRebel Authentication Token.");
-      }
-      catch (ConnectException e) {
-        log.warn("ERROR! Unable to connect to server.");
-        log.warn("URL: {}", e.getURL());
-        if (e.getURL().equals("https://")) {
-          log.warn("Please, navigate to Jenkins Configuration to specify running LiveRebel URL.");
-        }
-        else {
-          log.warn("Reason: {}", e.getMessage());
-        }
-      }
-      return null;
+    public boolean isDebugLoggingEnabled() {
+      return isDebugLoggingEnabled;
     }
 
     public FormValidation doCheckTestConnection() throws IOException, ServletException {
@@ -340,8 +308,9 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
 
     public FormValidation doTestConnection(@QueryParameter("authToken") final String authToken,
         @QueryParameter("lrUrl") final String lrUrl, @QueryParameter boolean isJobConfView) throws IOException, ServletException {
+      CommandCenter cc = null;
       try {
-        new CommandCenterFactory().setUrl(lrUrl).setVerbose(false).authenticate(authToken).newCommandCenter();
+        cc = new CommandCenterFactory().setUrl(lrUrl).setVerbose(false).authenticate(authToken).newCommandCenter();
         return FormValidation.ok("Success");
       }
       catch (Forbidden e) {
@@ -353,6 +322,9 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       }
       catch (Exception e) {
         return FormValidation.error(e.getMessage());
+      }
+      finally {
+        if (cc != null) cc.close();
       }
     }
 
@@ -375,9 +347,7 @@ public class LiveRebelDeployBuilder extends Builder implements Serializable {
       authToken = formData.getString("authToken");
       lrUrl = "https://" + formData.getString("lrUrl").replaceFirst("http://", "").replaceFirst("https://", "");
       isDebugLoggingEnabled = formData.getBoolean("isDebugLoggingEnabled");
-      staticAuthToken = authToken;
-      staticLrUrl = lrUrl;
-      staticIsDebugLoggingEnabled = isDebugLoggingEnabled;
+      StaticCommandCenter.configure(authToken, lrUrl, isDebugLoggingEnabled);
       save();
       return super.configure(req, formData);
     }

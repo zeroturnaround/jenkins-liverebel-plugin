@@ -1,5 +1,14 @@
 package org.zeroturnaround.jenkins;
 
+import static org.apache.commons.lang.StringUtils.trimToNull;
+import static org.zeroturnaround.jenkins.util.ServerConvertUtil.filterFileServers;
+import static org.zeroturnaround.jenkins.util.ServerConvertUtil.filterProxyServers;
+import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverCheckBoxToServer;
+import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverToServerCheckBox;
+import hudson.Extension;
+import hudson.model.Hudson;
+import hudson.util.FormValidation;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,15 +23,6 @@ import org.zeroturnaround.liverebel.plugins.ServersUtil;
 
 import com.zeroturnaround.liverebel.api.Forbidden;
 import com.zeroturnaround.liverebel.api.SchemaInfo;
-
-import hudson.Extension;
-import hudson.model.Hudson;
-import hudson.util.FormValidation;
-import static org.apache.commons.lang.StringUtils.trimToNull;
-import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverCheckBoxToServer;
-import static org.zeroturnaround.jenkins.util.ServerConvertUtil.serverToServerCheckBox;
-import static org.zeroturnaround.jenkins.util.ServerConvertUtil.filterFileServers;
-import static org.zeroturnaround.jenkins.util.ServerConvertUtil.filterProxyServers;
 
 public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
 
@@ -135,7 +135,7 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
 
   public List<ServerCheckbox> getServers() {
     return serverToServerCheckBox(new ServersUtil(
-        LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(),
+        StaticCommandCenter.getCommandCenter(),
         serverCheckBoxToServer(servers == null ? new ArrayList<ServerCheckbox>() : servers)).getServers());
   }
 
@@ -167,7 +167,12 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
     }
 
     public List<ServerCheckbox> getDefaultServers() {
-      descriptorServers = new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getDefaultServers();
+      descriptorServers = new ServersUtil(StaticCommandCenter.getCommandCenter(), null).getDefaultServers();
+      return serverToServerCheckBox(descriptorServers);
+    }
+
+    public List<ServerCheckbox> getDatabaseServers() {
+      descriptorServers = new ServersUtil(StaticCommandCenter.getCommandCenter(), null).getDatabaseServers();
       return serverToServerCheckBox(descriptorServers);
     }
 
@@ -176,14 +181,14 @@ public class DeployOrUpdate extends LiveRebelDeployBuilder.ActionWrapper {
     }
 
     public List<SchemaInfo> getDefaultSchemas() {
-      schemas = new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getSchemas();
+      schemas = new ServersUtil(StaticCommandCenter.getCommandCenter(), null).getSchemas();
       return schemas;
     }
 
     public List<SchemaInfo> getDefaultSchemasByServer(String serverId) {
       if (serverId == null || serverId.length() == 0)
         return new ArrayList<SchemaInfo>();
-      schemas = new ServersUtil(LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter(), null).getSchemas();
+      schemas = new ServersUtil(StaticCommandCenter.getCommandCenter(), null).getSchemas();
       List<SchemaInfo> schemasByServer = new ArrayList<SchemaInfo>();
       for (SchemaInfo schemaInfo : schemas) {
         if (schemaInfo.getServerId().equalsIgnoreCase(serverId))

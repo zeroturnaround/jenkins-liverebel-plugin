@@ -89,7 +89,7 @@
     <f:nested>
       <table style="margin-left: -3px; width: 700px;">
         <f:entry title="Choose schema" field="schema" help="/plugin/liverebel-deploy/help-database-schema.html">
-          <j:forEach var="server" items="${descriptor.getDefaultServers()}" varStatus="loopServer">
+          <j:forEach var="server" items="${descriptor.getDatabaseServers()}" varStatus="loopServer">
             <j:if test="${loopServer.first}">
               <br />
             </j:if>

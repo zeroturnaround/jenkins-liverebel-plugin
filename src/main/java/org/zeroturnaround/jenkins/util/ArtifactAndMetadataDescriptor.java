@@ -14,7 +14,7 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 
-import static org.zeroturnaround.jenkins.LiveRebelDeployBuilder.DescriptorImpl.newCommandCenter;
+import static org.zeroturnaround.jenkins.StaticCommandCenter.getCommandCenter;
 
 public class ArtifactAndMetadataDescriptor<T extends Describable<T>> extends Descriptor<T> {
 
@@ -56,7 +56,7 @@ public class ArtifactAndMetadataDescriptor<T extends Describable<T>> extends Des
   }
 
   public boolean isMetadataSupported() {
-    CommandCenter cc = newCommandCenter();
+    CommandCenter cc = getCommandCenter();
     return cc != null && !cc.getVersion().equals("2.0");
   }
 

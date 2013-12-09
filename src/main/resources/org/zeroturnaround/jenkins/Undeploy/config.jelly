@@ -27,7 +27,7 @@
     </f:entry>
   </f:optionalBlock>
 
-  <f:optionalBlock name="${descriptor.getCurrentUniqueId()}.schemaSelectionForm" title="contains database migrations (be sure to select schema to which applicstion was deployed)" checked="${instance.hasDatabaseMigrations}">
+  <f:optionalBlock name="${descriptor.getCurrentUniqueId()}.schemaSelectionForm" title="contains database migrations (be sure to select schema to which application was deployed)" checked="${instance.hasDatabaseMigrations}">
     <f:invisibleEntry>
       <div style="display: none;">
         <f:textbox name="lrSelectedSchema" value="${instance.selectedSchema}" 

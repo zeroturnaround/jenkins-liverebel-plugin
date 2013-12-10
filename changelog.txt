@@ -2,6 +2,10 @@
   LiveRebel Deploy Plugin Changelog                    
 ********************************************
 
+2.7.4 (10th of Dec 2013)
+* Fixed undeploy
+* Improved debug logging (it now logs also strack traces)
+
 2.7.3 (15th of Nov 2013)
 * Fixed a memory leak (each time plugin was connecting to LiveRebel Command Center, it did not dispose of the HTTP connections properly)
 * Improved performance, the plugin now caches the connection to LiveRebel Command Center
